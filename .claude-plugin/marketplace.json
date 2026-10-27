@@ -1,0 +1,36 @@
+{
+  "name": "foundations",
+  "owner": {
+    "name": "Mariano"
+  },
+  "metadata": {
+    "description": "Las skills esenciales de Mariano para crear con agentes: think, episodes, visual y orbs.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "think",
+      "source": "./plugins/think",
+      "description": "Cómo pensar y escribir con agentes: el dial de profundidad y el recorte a lo esencial.",
+      "version": "0.1.1"
+    },
+    {
+      "name": "episodes",
+      "source": "./plugins/episodes",
+      "description": "Episodios animados contados por un personaje, en series y con su sala de proyección (el motor de Sunday).",
+      "version": "0.1.0"
+    },
+    {
+      "name": "visual",
+      "source": "./plugins/visual",
+      "description": "Lenguaje visual en código: animaciones explicativas, portadas con orbe y polvo de partículas y webs de una página con orbe.",
+      "version": "0.1.1"
+    },
+    {
+      "name": "orbs",
+      "source": "./plugins/orbs",
+      "description": "Orbes del Akasha: forjar capacidades agénticas nuevas y las skills del orbe guardián de la memoria.",
+      "version": "0.1.1"
+    }
+  ]
+}

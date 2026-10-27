@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Motion Scenes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Gallery for motion-scenes: one figure per scene, with pause and a scrubber. Edit SCENES and the two script tags. */
+:root{--night:#08070E;--steel:#7D91B0;--ice:#B0D1FF;--rule:#1C1B2B;--text:#C9CFE0;--grad:linear-gradient(62deg,#FF00A1,#FF3E60 28%,#FF6447);color-scheme:dark}
+body{margin:0;background:var(--night);color:#fff;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+main{width:min(1100px,100% - 32px);margin:0 auto;padding:56px 0 96px;display:grid;gap:72px}
+h1{margin:0;font-size:clamp(34px,5vw,60px);font-weight:600;letter-spacing:-.04em;line-height:1.05}
+em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--steel);font-size:clamp(16px,1.6vw,20px);line-height:1.5;max-width:62ch;margin:14px 0 0}
+figure{margin:0;display:grid;gap:14px}
+.kx{width:100%;aspect-ratio:16/10;display:block;border-radius:12px;box-shadow:inset 0 0 0 1px var(--rule),0 20px 60px -30px #8B5CF655;background:var(--night)}
+figcaption{display:grid;gap:6px}
+figcaption h2{margin:0;font-size:clamp(20px,2.2vw,28px);font-weight:600;letter-spacing:-.03em}
+figcaption p{margin:0;color:var(--text);line-height:1.5;max-width:70ch}
+.where{font:500 13px "JetBrains Mono",monospace;color:var(--ice)}
+.bar{display:flex;gap:12px;align-items:center}
+.bar button{font:600 12px "Plus Jakarta Sans",sans-serif;color:#fff;background:transparent;border:1px solid #2A2D44;border-radius:6px;padding:6px 12px;cursor:pointer;min-width:64px}
+.bar input{flex:1;accent-color:#FF3E60}
+.bar output{font:500 12px "JetBrains Mono",monospace;color:var(--steel);min-width:92px;text-align:right}
+</style></head><body>
+<main>
+<header><h1>Scenes, <em>in motion</em></h1>
+<p class="lead">One scene per key concept. Drawn frame by frame in code, looping, playing only while on screen.</p></header>
+</main>
+<script>
+const SCENES = [                       // [id, title, what it tells, where it goes]
+  ['sources', 'Where I live', 'What is written and what is spoken flow into the library.', '#s-live'],
+];
+const main = document.querySelector('main');
+for (const [id, title, text, where] of SCENES) {
+  const f = document.createElement('figure');
+  f.innerHTML = `<canvas class="kx" data-kx="${id}" data-kx-keep role="img" aria-label="${title}"></canvas>
+    <div class="bar"><button type="button">Pause</button><input type="range" min="0" max="1000" value="0" aria-label="Scrub ${title}"><output>0.0 s</output></div>
+    <figcaption><span class="where">${where} · data-kx="${id}"</span><h2>${title}</h2><p>${text}</p></figcaption>`;
+  main.append(f);
+  const cv = f.querySelector('canvas'), btn = f.querySelector('button'), rng = f.querySelector('input'), out = f.querySelector('output');
+  let dragging = false;
+  cv.addEventListener('kx:frame', e => { if (!dragging) rng.value = Math.round(e.detail.t / e.detail.D * 1000); out.value = `${e.detail.t.toFixed(1)} / ${e.detail.D} s`; });
+  btn.onclick = () => { if (!cv.kx) return; cv.kx.pause(!cv.kx.paused); btn.textContent = cv.kx.paused ? 'Play' : 'Pause'; };
+  rng.oninput = () => { if (!cv.kx) return; dragging = true; cv.kx.pause(true); btn.textContent = 'Play'; cv.kx.seek(rng.value / 1000 * cv.kx.D); dragging = false; };
+}
+</script>
+<script src="engine.js"></script>
+<script src="scenes.js"></script>
+</body></html>

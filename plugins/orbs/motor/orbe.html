@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orbe Cian</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Vista previa de un orbe: un solo lienzo a pantalla completa, el orbe al centro, texto mínimo abajo.
+   Parámetros: ?hue=187&form=orb&seed=vigia&nombre=Vigía&still=1 — sin parámetros es Orbe Cian. */
+:root {
+  color-scheme: dark;
+  --void: #000000;
+  --cyan: #00e5ff;
+  --ink: #c9f6fb;
+  --dim: #4f7a80;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--void);
+  color: var(--ink);
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+canvas:active { cursor: grabbing; }
+.frase, .dato {
+  position: absolute;
+  left: 0; right: 0;
+  padding-inline: 20px;
+  text-align: center;
+  pointer-events: none;
+  margin: 0;
+}
+.frase {
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(22px, 3.4vw, 34px);
+  line-height: 1.15;
+  color: var(--ink);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--cyan) 45%, transparent);
+  text-wrap: balance;
+}
+.dato {
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--font-data);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.aviso {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  padding-inline: 24px; text-align: center;
+  font-family: var(--font-data); font-size: 13px; color: var(--ink);
+}
+</style>
+</head>
+<body>
+<canvas id="lienzo" aria-label="Orbe de partículas flotando en un espacio negro"></canvas>
+<p class="frase" id="frase" hidden></p>
+<p class="dato" id="dato" hidden></p>
+<p class="aviso" id="aviso" hidden>Este navegador no tiene WebGL activo, así que el orbe no se puede dibujar.</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="./orbe.js"></script>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var hay = q.has('hue') || q.has('form') || q.has('seed') || q.has('nombre');
+  var hue = q.has('hue') && isFinite(+q.get('hue')) ? Math.round(+q.get('hue')) : 187;
+  var form = window.Orbe && Orbe.FORMAS.indexOf(q.get('form')) >= 0 ? q.get('form') : 'orb';
+  var nombre = q.get('nombre');
+  var seed = q.has('seed') ? q.get('seed') : (nombre || undefined);
+
+  // el texto acompaña el tono del orbe; sin parámetros quedan los colores de Orbe Cian
+  if (hay && hue !== 187) {
+    var raiz = document.documentElement.style;
+    raiz.setProperty('--cyan', 'hsl(' + hue + ' 100% 55%)');
+    raiz.setProperty('--ink', 'hsl(' + hue + ' 80% 90%)');
+    raiz.setProperty('--dim', 'hsl(' + hue + ' 22% 41%)');
+  }
+  if (nombre) {
+    var frase = document.getElementById('frase');
+    frase.textContent = nombre; frase.hidden = false;
+    document.title = nombre;
+  }
+  if (hay) {
+    var dato = document.getElementById('dato');
+    dato.textContent = form + ' · ' + hue; dato.hidden = false;
+    document.getElementById('lienzo').setAttribute('aria-label', (nombre || 'Orbe') + ': forma ' + form + ', tono ' + hue);
+  }
+
+  try {
+    Orbe.create(document.getElementById('lienzo'), { hue: hue, form: form, seed: seed, still: q.get('still') === '1' });
+  } catch (e) {
+    document.getElementById('aviso').hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

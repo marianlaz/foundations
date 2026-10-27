@@ -1,0 +1,104 @@
+<!doctype html>
+<!-- Thumbnail template. compose.mjs opens it as thumb.html#<json> at the target size and screenshots it.
+     JSON: {img, w, h, hook, focus:[fx,fy], zoom, anchor:[ax,ay], side, seed, orb, chip, dim}
+       img     frame (absolute file path or URL)
+       hook    2–4 words; *word* = coral; "|" forces a line break
+       focus   point of the frame (0–1, 0–1) that is the subject
+       anchor  where that point lands on the canvas (0–1, 0–1). Default [.7,.46]: subject right, text left
+       zoom    1 = frame width fills the canvas width; >1 crops in
+       side    "left" (default) or "right": where the hook goes
+       orb     optional {x,y,r,tint} in canvas fractions: draws the orb (orb.js) when the frame has none
+       dim     0–1 extra darkening of the whole frame (default 0)
+       wash    "side" (default) or "floor" (only the bottom gets dark: for frames whose subject sits on the hook's side, up top) -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Brand Sans";src:url("PlusJakartaSans-Variable.ttf") format("truetype");font-weight:200 800}
+:root{--bg:#08070e;--coral:#FF6447;--red:#ff3e60;--ink:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);overflow:hidden}
+#stage{position:relative;overflow:hidden;background:var(--bg)}
+canvas{position:absolute;inset:0}
+.hook{position:absolute;font-family:"Brand Sans",sans-serif;font-weight:800;color:var(--ink);letter-spacing:-.035em;line-height:.98;
+  text-wrap:balance;text-shadow:0 2px 24px rgba(8,7,14,.85),0 1px 3px rgba(8,7,14,.9)}
+.hook em{font-style:normal;color:var(--coral)}
+.chip{position:absolute;display:inline-flex;align-items:center;font-family:"Brand Sans",sans-serif;font-weight:600;color:#FFF6EA;
+  letter-spacing:.01em;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(24,18,12,.55);white-space:nowrap}
+.chip i{border-radius:50%;background:#FBB040;box-shadow:0 0 0 3px rgba(251,176,64,.22);flex:none}
+</style></head><body>
+<div id="stage"><canvas id="cv"></canvas><div class="chip" id="chip"><i></i><span>Unverified</span></div><div class="hook" id="hook"></div></div>
+<script src="orb.js"></script>
+<script>
+(async () => {
+const S = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+const W = S.w, H = S.h, u = W / 1280;                       // u: one "design pixel" of the 1280 grid
+const stage = document.getElementById('stage'); stage.style.width = W + 'px'; stage.style.height = H + 'px';
+const cv = document.getElementById('cv'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
+let seed = (S.seed || 7) * 7919 % 2147483647; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+const side = S.side || 'left', L = side === 'left';
+
+// 1) the frame: subject point `focus` lands on `anchor`
+const img = new Image(); img.src = S.img.startsWith('/') ? 'file://' + S.img : S.img; await img.decode();
+const zoom = S.zoom || 1, sc = W / img.naturalWidth * zoom;
+const [fx, fy] = S.focus || [.5, .5], [ax, ay] = S.anchor || (L ? [.7, .46] : [.3, .46]);
+let dx = ax * W - fx * img.naturalWidth * sc, dy = ay * H - fy * img.naturalHeight * sc;
+const dw = img.naturalWidth * sc, dh = img.naturalHeight * sc;
+ctx.fillStyle = '#08070e'; ctx.fillRect(0, 0, W, H);
+ctx.drawImage(img, dx, dy, dw, dh);
+// feather the frame's own edges into the background (when the crop does not cover the canvas)
+const fe = 90 * u, edge = (x0, y0, x1, y1, ex, ey, ew, eh) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, 'rgba(8,7,14,1)'); g.addColorStop(1, 'rgba(8,7,14,0)'); ctx.fillStyle = g; ctx.fillRect(ex, ey, ew, eh); };
+if (dx > -fe) edge(dx, 0, dx + fe, 0, dx, 0, fe, H);
+if (dx + dw < W + fe) edge(dx + dw, 0, dx + dw - fe, 0, dx + dw - fe, 0, fe, H);
+if (dy > -fe) edge(0, dy, 0, dy + fe, 0, dy, W, fe);
+if (dy + dh < H + fe) edge(0, dy + dh, 0, dy + dh - fe, 0, dy + dh - fe, W, fe);
+if (S.dim) { ctx.fillStyle = `rgba(8,7,14,${S.dim})`; ctx.fillRect(0, 0, W, H); }
+
+// 2) optional real orb (when the frame has none, or to make it the protagonist)
+if (S.orb && window.Orb) { const o = Orb.create({seed: S.seed || 7}); o.draw(ctx, S.orb.x * W, S.orb.y * H, S.orb.r * W, S.orb.t || 3.2, {tint: S.orb.tint || '#FF6447', state: 'breathing'}); }
+
+// 3) darkness where the hook goes: a side wash + a floor
+// wash: "side" (default) darkens the hook's side; "floor" only darkens the bottom (subject can stay on the hook's side, up top)
+const FLOOR = S.wash === 'floor';
+if (!FLOOR) {
+  const g1 = L ? ctx.createLinearGradient(0, 0, W * .72, 0) : ctx.createLinearGradient(W, 0, W * .28, 0);
+  g1.addColorStop(0, 'rgba(8,7,14,.94)'); g1.addColorStop(.42, 'rgba(8,7,14,.78)'); g1.addColorStop(1, 'rgba(8,7,14,0)');
+  ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+}
+const g2 = ctx.createLinearGradient(0, H, 0, H * (FLOOR ? .3 : .45)); g2.addColorStop(0, `rgba(8,7,14,${FLOOR ? .97 : .9})`); g2.addColorStop(FLOOR ? .45 : 1, `rgba(8,7,14,${FLOOR ? .82 : 0})`); g2.addColorStop(1, 'rgba(8,7,14,0)');
+ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+const g3 = ctx.createLinearGradient(0, 0, 0, H * .22); g3.addColorStop(0, 'rgba(8,7,14,.55)'); g3.addColorStop(1, 'rgba(8,7,14,0)');
+ctx.fillStyle = g3; ctx.fillRect(0, 0, W, H);
+
+// 4) particle dust over the dark side: the violet/blue palette of motion-scenes' akasha-field.js, seeded per episode
+const PAL = ['#A78BFA', '#B0D1FF', '#8B5CF6', '#60A5FA', '#F0ABFC', '#FFFFFF'];
+const hexa = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+const pts = [];
+for (let i = 0; i < 260; i++) {
+  const t = Math.pow(rnd(), 1.6), x = L ? t * W * .62 : W - t * W * .62, y = FLOOR ? H * (.45 + .55 * Math.pow(rnd(), .7)) : rnd() * H, z = rnd();
+  pts.push([x, y, z]);
+  const r = (.4 + z * 1.5) * u, a = (.12 + .5 * z * z) * (1 - t * .6), c = PAL[Math.floor(rnd() * PAL.length)];
+  const gr = ctx.createRadialGradient(x, y, 0, x, y, r * 4); gr.addColorStop(0, hexa('#FFFFFF', a)); gr.addColorStop(.25, hexa(c, a * .8)); gr.addColorStop(1, hexa(c, 0));
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r * 4, 0, 7); ctx.fill();
+}
+ctx.lineWidth = .6 * u;                                  // a few filaments, nearest neighbours
+for (let i = 0; i < 40; i++) { const a = pts[i]; let b = null, bd = 1e9; for (let j = 0; j < 120; j++) { if (j === i) continue; const d = Math.hypot(a[0] - pts[j][0], a[1] - pts[j][1]); if (d < bd) { bd = d; b = pts[j]; } }
+  if (b && bd < 90 * u) { ctx.strokeStyle = `rgba(176,209,255,${.05 + .1 * a[2]})`; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }
+
+// 5) chip
+const chip = document.getElementById('chip');
+if (S.chip === false) chip.remove(); else {
+  Object.assign(chip.style, {left: 44 * u + 'px', top: 40 * u + 'px', fontSize: 21 * u + 'px', gap: 11 * u + 'px', padding: `${8 * u}px ${18 * u}px ${8 * u}px ${15 * u}px`});
+  const d = chip.querySelector('i'); d.style.width = d.style.height = 11 * u + 'px';
+}
+
+// 6) hook: biggest size that fits the column in at most `lines` lines
+const hook = document.getElementById('hook');
+hook.innerHTML = S.hook.replace(/\*([^*]+)\*/g, '<em>$1</em>').replace(/\|/g, '<br>');
+await document.fonts.ready;
+const colW = (S.col || .56) * W, pad = 64 * u, maxLines = S.lines || 2;
+Object.assign(hook.style, {width: colW + 'px', bottom: (S.bottom || 64) * u + 'px', textAlign: L ? 'left' : 'right'}); hook.style[L ? 'left' : 'right'] = pad + 'px';
+let fs = (S.max || 136) * u;
+const fits = () => { const lh = parseFloat(getComputedStyle(hook).lineHeight); return hook.scrollWidth <= colW + 1 && hook.offsetHeight <= lh * maxLines + 2; };
+for (; fs > 60 * u; fs -= 2 * u) { hook.style.fontSize = fs + 'px'; if (fits()) break; }
+window.__done = true;
+})().catch(e => { document.title = 'ERR ' + e.message; window.__done = true; window.__err = String(e); });
+</script></body></html>

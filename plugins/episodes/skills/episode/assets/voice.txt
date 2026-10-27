@@ -1,0 +1,5 @@
+# One line per beat: "id | text". The ids name the beats in scenes.js (S('hook'), wt('hook', 'word')).
+# [tags] only from the list in character/persona.md. Lines starting with # are ignored.
+hook  | TODO: the question or the problem, in the first three seconds.
+show  | TODO: the mechanism, one idea per line.
+close | TODO: the line to keep.

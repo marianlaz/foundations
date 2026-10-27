@@ -1,0 +1,8 @@
+{
+  "name": "episodes",
+  "version": "0.1.0",
+  "description": "Episodios animados contados por un personaje, en series y con su sala de proyección (el motor de Sunday).",
+  "author": {
+    "name": "Mariano"
+  }
+}

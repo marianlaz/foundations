@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Episode</title>
+<style>
+  :root { --bg: #000; --ink: #F5F5F5; --line: #333; }
+  html.light { --bg: #FAFAFA; --ink: #1A1A1A; --line: #E5E5E5; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, sans-serif; }
+  body:not(.render) { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; box-sizing: border-box; }
+  #cv { display: block; width: min(100%, calc((100vh - 90px) * __W__ / __H__)); aspect-ratio: __W__ / __H__; }
+  body.render #cv { width: __W__px; height: __H__px; }
+  #bar { width: min(100%, calc((100vh - 90px) * __W__ / __H__)); display: flex; align-items: center; gap: 12px; font: 500 13px ui-monospace, Menlo, monospace; }
+  #bar button { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
+  #scrub { flex: 1; min-width: 100px; }
+  body.render #bar { display: none; }
+</style>
+<script>window.KX_SIZE = [__W__, __H__];</script>
+<script src="runtime/character.js"></script>
+<script>
+  // the character's fonts, and ?theme=light (same script, the light palette of character.json)
+  const LIGHT = new URLSearchParams(location.search).get('theme') === 'light';
+  if (LIGHT) document.documentElement.classList.add('light');
+  document.head.append(Object.assign(document.createElement('link'), {rel: 'stylesheet', href: `https://fonts.googleapis.com/css2?${CHARACTER.fonts.google}&display=swap`}));
+</script>
+</head>
+<body>
+<canvas id="cv" width="__W__" height="__H__" role="img"></canvas>
+<div id="bar">
+  <button id="play" aria-label="Play or pause">▶ play</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Scrub">
+  <span id="time">00.0s</span>
+</div>
+<script src="runtime/orb.js"></script>
+<script src="runtime/engine.js"></script>
+<script>
+  const CH = window.CHARACTER;
+  KX.theme({name: CH.display_name.toUpperCase(), colors: CH.colors, light: CH.colors_light, gradient: CH.gradient, ...CH.fonts});
+  KX.light(LIGHT);
+</script>
+<script src="voice.js"></script>
+<script src="scenes.js"></script>
+<script>
+(() => {
+  const RENDER = new URLSearchParams(location.search).has('render');
+  if (RENDER) document.body.classList.add('render');
+  const X = window.EPISODE, cv = document.getElementById('cv'), c = cv.getContext('2d');
+  document.title = `${CHARACTER.display_name} · ${X.title}`; cv.setAttribute('aria-label', X.title);
+  let t = 0;
+  const paint = () => { c.setTransform(1, 0, 0, 1, 0, 0); X.draw(c, t); };
+  const stacks = [CHARACTER.fonts.sans, CHARACTER.fonts.body, CHARACTER.fonts.mono];
+  Promise.all(stacks.flatMap(f => ['500', '600', '700', '800'].map(w => document.fonts.load(`${w} 20px ${f}`).catch(() => 0)))).then(() => document.fonts.ready).then(() => {
+    window.EP = {duration: X.duration, size: [__W__, __H__], poster: X.poster, seek(x) { t = Math.max(0, Math.min(X.duration, x)); paint(); }};
+    paint();
+  });
+  if (RENDER) return;
+  /* player: the voice is the clock when voice.mp3 exists, the wall clock otherwise */
+  const au = new Audio('voice.mp3'); let hasAudio = false, playing = false, last = 0;
+  au.addEventListener('canplaythrough', () => hasAudio = true, {once: true}); au.addEventListener('error', () => hasAudio = false);
+  const playBtn = document.getElementById('play'), scrub = document.getElementById('scrub'), time = document.getElementById('time');
+  const ui = () => { scrub.value = Math.round(t / X.duration * 1000); time.textContent = t.toFixed(1).padStart(4, '0') + 's'; playBtn.textContent = playing ? '❚❚ pause' : '▶ play'; };
+  const loop = now => { if (!playing) return;
+    if (hasAudio && !au.paused) t = au.currentTime; else t += Math.min(.05, (now - last) / 1000);
+    last = now; if (t >= X.duration) { t = X.duration; playing = false; au.pause(); }
+    paint(); ui(); if (playing) requestAnimationFrame(loop); };
+  const play = () => { if (t >= X.duration - .05) t = 0; playing = true; last = performance.now();
+    if (hasAudio && t < au.duration) { au.currentTime = t; au.play().catch(() => 0); } requestAnimationFrame(loop); ui(); };
+  const pause = () => { playing = false; au.pause(); ui(); };
+  playBtn.onclick = () => playing ? pause() : play();
+  scrub.oninput = () => { t = scrub.value / 1000 * X.duration; if (hasAudio) au.currentTime = Math.min(t, au.duration || t); paint(); ui(); };
+  addEventListener('keydown', e => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); playBtn.click(); } });
+  ui();
+})();
+</script>
+</body>
+</html>

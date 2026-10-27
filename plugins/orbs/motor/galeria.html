@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Galería de orbes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Las cuatro formas lado a lado, cada una en su lienzo, para comparar. Arriba se elige el tono. */
+:root {
+  color-scheme: dark;
+  --void: #000000;
+  --ink: #c9f6fb;
+  --dim: #4f7a80;
+  --linea: #10282b;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--void); color: var(--ink); display: flex; flex-direction: column; }
+header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 14px 16px 10px;
+}
+h1 { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 26px; }
+.tonos { display: flex; gap: 6px; flex-wrap: wrap; }
+.tonos button {
+  font-family: var(--font-data); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--dim); background: transparent; border: 1px solid var(--linea); border-radius: 999px;
+  padding: 6px 12px; cursor: pointer;
+}
+.tonos button[aria-pressed="true"] { color: var(--ink); border-color: var(--dim); }
+main {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  gap: 1px; background: var(--linea);
+}
+figure { position: relative; margin: 0; background: var(--void); min-height: 260px; }
+figure canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+figcaption {
+  position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; pointer-events: none;
+}
+figcaption b { display: block; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 22px; }
+figcaption span { font-family: var(--font-data); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.aviso { padding: 24px 16px; font-family: var(--font-data); font-size: 13px; text-align: center; }
+@media (max-width: 640px) {
+  main { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-rows: 70vw; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Las cuatro formas</h1>
+  <div class="tonos" id="tonos" role="group" aria-label="Tono">
+    <button data-tono="187" aria-pressed="true">cian · 187</button>
+    <button data-tono="265" aria-pressed="false">violeta · 265</button>
+    <button data-tono="42" aria-pressed="false">dorado · 42</button>
+    <button data-tono="mezcla" aria-pressed="false">mezcla</button>
+  </div>
+</header>
+<p class="aviso" id="aviso" hidden>Este navegador no tiene WebGL activo, así que los orbes no se pueden dibujar.</p>
+<main id="grilla"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="./orbe.js"></script>
+<script>
+(function () {
+  var FORMAS = [
+    { form: 'orb', rol: 'generalista', mezcla: 187 },
+    { form: 'ring', rol: 'vigía · monitor', mezcla: 150 },
+    { form: 'crystal', rol: 'analista · investigador', mezcla: 265 },
+    { form: 'star', rol: 'ejecutor · hacedor', mezcla: 28 }
+  ];
+  var q = new URLSearchParams(location.search);
+  var semilla = q.get('seed') || 'akasha';
+  var grilla = document.getElementById('grilla'), orbes = [];
+
+  try {
+    FORMAS.forEach(function (f) {
+      var fig = document.createElement('figure');
+      fig.innerHTML = '<canvas aria-label="Orbe de forma ' + f.form + '"></canvas><figcaption><b>' + f.form + '</b><span>' + f.rol + '</span></figcaption>';
+      grilla.appendChild(fig);
+      // cuatro lienzos a la vez: bajo la densidad para que no pese
+      orbes.push(Orbe.create(fig.querySelector('canvas'), { form: f.form, hue: 187, seed: semilla, density: 0.6, interactive: false, still: q.get('still') === '1' }));
+    });
+  } catch (e) {
+    orbes.forEach(function (o) { o.destroy(); });
+    grilla.hidden = true;
+    document.getElementById('aviso').hidden = false;
+    return;
+  }
+
+  function tono(valor) {
+    orbes.forEach(function (o, i) { o.set({ hue: valor === 'mezcla' ? FORMAS[i].mezcla : +valor }); });
+    [].forEach.call(document.querySelectorAll('#tonos button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tono === valor)); });
+  }
+  document.getElementById('tonos').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (b) tono(b.dataset.tono);
+  });
+  if (q.get('hue')) tono(q.get('hue'));
+})();
+</script>
+</body>
+</html>

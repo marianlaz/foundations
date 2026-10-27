@@ -1,0 +1,282 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Orbe Cian</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: un solo lienzo a pantalla completa, el orbe al centro, texto mínimo en las esquinas. Look único, oscuro. */
+:root {
+  color-scheme: dark;
+  --void: #000000;
+  --cyan: #00e5ff;
+  --ink: #c9f6fb;
+  --dim: #4f7a80;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html, body { height: 100%; }
+body {
+  background: var(--void);
+  color: var(--ink);
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+canvas:active { cursor: grabbing; }
+.frase, .dato {
+  position: absolute;
+  left: 0; right: 0;
+  padding-inline: 20px;
+  text-align: center;
+  pointer-events: none;
+  margin: 0;
+}
+.frase {
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(22px, 3.4vw, 34px);
+  line-height: 1.15;
+  color: var(--ink);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--cyan) 45%, transparent);
+  text-wrap: balance;
+}
+.dato {
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--font-data);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.aviso {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  padding-inline: 24px; text-align: center;
+  font-family: var(--font-data); font-size: 13px; color: var(--ink);
+}
+</style>
+
+<canvas id="lienzo" aria-label="Orbe cian de partículas flotando en un espacio negro"></canvas>
+<p class="aviso" id="aviso" hidden>Este navegador no tiene WebGL activo, así que el orbe no se puede dibujar.</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById('lienzo');
+  var renderer;
+  try {
+    if (!window.THREE) throw new Error('sin three');
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
+  } catch (e) {
+    document.getElementById('aviso').hidden = false;
+    return;
+  }
+
+  var calma = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var chico = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 700;
+  var N = chico ? 36000 : 80000;
+  var ANILLOS = 44;
+  var N_ANILLO = Math.floor(N * 0.38);
+
+  renderer.setClearColor(0x000000, 1);
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(50, 1, 0.01, 50);
+
+  // Cada partícula orbita su propio eje. Todo el movimiento se calcula en el vertex shader.
+  var base = new Float32Array(N * 3);
+  var eje = new Float32Array(N * 3);
+  var data = new Float32Array(N * 4); // fase, velocidad, radio, semilla
+
+  function dirAzar(o) {
+    var z = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, s = Math.sqrt(1 - z * z);
+    o[0] = s * Math.cos(t); o[1] = s * Math.sin(t); o[2] = z;
+  }
+  function perp(a, o) {
+    var h = Math.abs(a[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    var x = a[1] * h[2] - a[2] * h[1], y = a[2] * h[0] - a[0] * h[2], z = a[0] * h[1] - a[1] * h[0];
+    var l = Math.hypot(x, y, z);
+    o[0] = x / l; o[1] = y / l; o[2] = z / l;
+  }
+
+  var anillos = [];
+  for (var r = 0; r < ANILLOS; r++) {
+    var a = [0, 0, 0], u = [0, 0, 0];
+    dirAzar(a); perp(a, u);
+    anillos.push({ a: a, u: u, rad: 0.72 + Math.random() * 0.5, vel: (0.12 + Math.random() * 0.3) * (Math.random() < 0.5 ? -1 : 1) });
+  }
+
+  var ta = [0, 0, 0], tu = [0, 0, 0];
+  for (var i = 0; i < N; i++) {
+    var fase = Math.random() * Math.PI * 2, vel, rad, seed = Math.random();
+    if (i < N_ANILLO) {
+      var g = anillos[i % ANILLOS];
+      // leve desvío del eje para que el trazo tenga grosor, como una línea de birome
+      ta[0] = g.a[0] + (Math.random() - 0.5) * 0.05;
+      ta[1] = g.a[1] + (Math.random() - 0.5) * 0.05;
+      ta[2] = g.a[2] + (Math.random() - 0.5) * 0.05;
+      var l = Math.hypot(ta[0], ta[1], ta[2]);
+      ta[0] /= l; ta[1] /= l; ta[2] /= l;
+      perp(ta, tu);
+      rad = g.rad + (Math.random() - 0.5) * 0.03;
+      vel = g.vel * (0.97 + Math.random() * 0.06);
+      seed = seed * 0.5 + 0.5; // semilla alta = trazo, más brillante
+    } else {
+      dirAzar(ta); perp(ta, tu);
+      rad = 0.25 + Math.pow(Math.random(), 0.3) * 0.8;
+      vel = (0.04 + Math.random() * 0.16) * (Math.random() < 0.5 ? -1 : 1);
+      seed = seed * 0.5;
+    }
+    eje.set(ta, i * 3); base.set(tu, i * 3);
+    data[i * 4] = fase; data[i * 4 + 1] = vel; data[i * 4 + 2] = rad; data[i * 4 + 3] = seed;
+  }
+
+  var geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(base, 3));
+  geo.setAttribute('aAxis', new THREE.BufferAttribute(eje, 3));
+  geo.setAttribute('aData', new THREE.BufferAttribute(data, 4));
+
+  var uniforms = {
+    uTime: { value: 0 },
+    uSize: { value: 1 },
+    uMax: { value: 40 },
+    uPointer: { value: new THREE.Vector3(0, 0, 0) },
+    uForce: { value: 0 },
+    uColor: { value: new THREE.Color(0x00e5ff) }
+  };
+
+  var mat = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
+    vertexShader: [
+      'attribute vec3 aAxis;',
+      'attribute vec4 aData;',
+      'uniform float uTime;',
+      'uniform float uSize;',
+      'uniform float uMax;',
+      'uniform vec3 uPointer;',
+      'uniform float uForce;',
+      'varying float vAlpha;',
+      'varying float vHot;',
+      'void main() {',
+      '  float seed = aData.w;',
+      '  float ang = aData.x + uTime * aData.y;',
+      '  float r = aData.z * (1.0 + 0.07 * sin(ang * 3.0 + uTime * 0.6 + seed * 40.0))',
+      '          * (1.0 + 0.035 * sin(uTime * 0.45));',
+      '  vec3 p = (position * cos(ang) + cross(aAxis, position) * sin(ang)) * r;',
+      '  p += aAxis * 0.05 * sin(ang * 2.0 + seed * 90.0 + uTime * 0.3);',
+      '  vec4 wp = modelMatrix * vec4(p, 1.0);',
+      '  vec3 d = wp.xyz - uPointer;',
+      '  float f = uForce / (1.0 + dot(d, d) * 7.0);',
+      '  wp.xyz += normalize(d + 0.0001) * f * 0.4;',
+      '  vec4 mv = viewMatrix * wp;',
+      '  gl_Position = projectionMatrix * mv;',
+      '  float trazo = step(0.5, seed);',
+      '  float tw = 0.65 + 0.35 * sin(uTime * 1.7 + seed * 300.0);',
+      '  float prof = max(-mv.z, 0.001);',
+      '  gl_PointSize = min(uSize * (0.75 + trazo * 0.55 + fract(seed * 17.0) * 0.6) / prof, uMax);',
+      '  vAlpha = (0.2 + trazo * 0.3) * tw * smoothstep(0.04, 0.45, prof);',
+      '  vHot = f + trazo * 0.25;',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      'uniform vec3 uColor;',
+      'varying float vAlpha;',
+      'varying float vHot;',
+      'void main() {',
+      '  vec2 c = gl_PointCoord - 0.5;',
+      '  float d = dot(c, c) * 4.0;',
+      '  if (d > 1.0) discard;',
+      '  float s = pow(1.0 - d, 2.2);',
+      '  vec3 col = mix(uColor, vec3(0.85, 1.0, 1.0), clamp(vHot * 0.6 + s * 0.25, 0.0, 1.0));',
+      '  gl_FragColor = vec4(col * s * vAlpha, 1.0);',
+      '}'
+    ].join('\n')
+  });
+
+  var orbe = new THREE.Points(geo, mat);
+  orbe.frustumCulled = false;
+  scene.add(orbe);
+
+  function medir() {
+    var w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
+    var pr = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(pr);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    lejos = 3.9 / Math.min(1, Math.max(0.45, camera.aspect * 0.95));
+    uniforms.uSize.value = h * pr * 0.0125;
+    uniforms.uMax.value = h * pr * 0.035;
+    encuadrar();
+  }
+  // viaje: 0 = afuera mirando el orbe, 1 = adentro, en el centro
+  var lejos = 3.9, viaje = 0, destino = 0;
+  function encuadrar() {
+    var e = viaje * viaje * (3 - 2 * viaje);
+    camera.position.set(0, 0, lejos + (0.02 - lejos) * e);
+    camera.fov = 50 + 34 * e;
+    camera.updateProjectionMatrix();
+  }
+  medir();
+  window.addEventListener('resize', medir);
+
+  // Puntero: arrastrar gira el orbe, acercarse empuja las partículas.
+  var rotX = 0.25, rotY = 0, velX = 0, velY = 0.0016, arrastrando = false, px = 0, py = 0, fuerza = 0;
+  var ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plano = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), golpe = new THREE.Vector3();
+
+  function ubicar(e) {
+    var b = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - b.left) / b.width) * 2 - 1, -((e.clientY - b.top) / b.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    if (ray.ray.intersectPlane(plano, golpe)) uniforms.uPointer.value.copy(golpe);
+    fuerza = destino === 1 ? 0 : 1;
+  }
+  var ix = 0, iy = 0, cuerpo = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1.3);
+  function pulsar(e) {
+    if (Math.hypot(e.clientX - ix, e.clientY - iy) > 6) return;
+    if (destino === 1) { destino = 0; return; }
+    if (ray.ray.intersectsSphere(cuerpo)) { destino = 1; fuerza = 0; }
+  }
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape') destino = 0; });
+  canvas.addEventListener('pointerdown', function (e) { arrastrando = true; px = ix = e.clientX; py = iy = e.clientY; ubicar(e); canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', function (e) {
+    ubicar(e);
+    if (!arrastrando) return;
+    velY = (e.clientX - px) * 0.0006; velX = (e.clientY - py) * 0.0006;
+    rotY += (e.clientX - px) * 0.005; rotX += (e.clientY - py) * 0.005;
+    px = e.clientX; py = e.clientY;
+  });
+  function soltar() { arrastrando = false; }
+  canvas.addEventListener('pointerup', function (e) { soltar(); ubicar(e); pulsar(e); if (e.pointerType !== 'mouse') fuerza = 0; });
+  canvas.addEventListener('pointercancel', function () { soltar(); fuerza = 0; });
+  canvas.addEventListener('pointerleave', function () { fuerza = 0; });
+
+
+  var reloj = new THREE.Clock(), t = 0, ritmo = calma ? 0.25 : 1;
+  function cuadro() {
+    var dt = Math.min(reloj.getDelta(), 0.05);
+    t += dt * ritmo;
+    uniforms.uTime.value = t;
+    uniforms.uForce.value += (fuerza - uniforms.uForce.value) * 0.08;
+    if (Math.abs(destino - viaje) > 0.0005) {
+      viaje += (destino - viaje) * (calma ? 0.2 : 0.035);
+      encuadrar();
+    }
+    if (!arrastrando) {
+      velY += (0.0016 * ritmo - velY) * 0.02;
+      velX *= 0.95;
+      rotY += velY; rotX += velX;
+    }
+    rotX = Math.max(-1.2, Math.min(1.2, rotX));
+    orbe.rotation.set(rotX, rotY, 0);
+    renderer.render(scene, camera);
+    requestAnimationFrame(cuadro);
+  }
+  cuadro();
+})();
+</script>
+
+</body></html>

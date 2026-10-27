@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orbe</title>
+<script>
+/* ================= config: todo lo que cambia de una web a otra está acá =================
+   SITE es la marca y el orbe. CHAPTERS es la historia: un objeto por pantalla. El resto del archivo no se toca
+   para armar una web nueva (ver SKILL.md y references/). */
+var SITE = {
+  name: "orbe",                                   // marca del header, en minúscula como un logo
+  tagline: "Una historia en capítulos",           // al lado de la marca (en mobile se oculta)
+  orb: "Orbe",                                    // nombre del orbe: firma la burbuja y es el título del tráiler
+  subtitle: "Una web de una página, contada por su orbe",  // debajo del título del tráiler
+  hint: "Scroll, ↓ o → para avanzar",
+  gate: {cta: "Tocá al orbe", sub: "o scrolleá para entrar directo"},
+  // palabras que orbitan el orbe en los capítulos center y side
+  words: ["ideas", "notas", "procesos", "decisiones", "preguntas", "datos", "equipo", "historia"],
+  // tráiler: exactamente 5 figuras (la última es la pregunta, se muestra con `ask` como caption)
+  trailer: {words: ["Ideas", "Notas", "Datos", "Gente", "¿?"], ask: "¿Y la respuesta?",
+    start: "Esperá. Primero te muestro de dónde vengo.", bang: "Hola. Soy el orbe."}
+};
+
+/* layout: center | side | scene | wide (ver references/design-system.md)
+   orb: calm | scatter | gather | dim | ring | pulse | split3 | bright (en scene y wide el orbe va a la esquina, en calm)
+   say: lo que dice el orbe en la burbuja · hl: el pedazo del título que se resalta
+   opcionales: fig {n, u} · demo (nota DEMO) · scene (nombre de una escena de motion-scenes) · type grid|list + items [{l, x, k: feature|callout}] */
+var CHAPTERS = [
+{id:"inicio",layout:"center",kicker:"Antes de empezar",title:"Una historia que se cuenta sola",hl:"se cuenta sola",body:"Cada pantalla dice una cosa. El orbe acompaña, cambia de forma y te habla abajo.",orb:"calm",say:"Hola. Te cuento cómo funciona esto."},
+{id:"hoy",layout:"side",kicker:"Lo que pasa hoy",title:"Todo está. Nada se encuentra.",hl:"Nada se encuentra",body:"Las piezas existen, pero sueltas. Cuando hacen falta, nadie sabe dónde quedaron.",orb:"scatter",say:"Así me siento cuando nadie ordena nada."},
+{id:"idea",layout:"center",kicker:"La idea",title:"Una sola base, a la vista",hl:"a la vista",fig:{n:"1 lugar",u:"todo en"},body:"Lo que estaba desparramado se junta en un lugar. Desde ahí se crea todo lo demás.",orb:"gather",say:"Ahí está. Ahora tengo forma."},
+{id:"como",layout:"wide",type:"grid",kicker:"Cómo se arma",title:"Cuatro piezas, un solo archivo",hl:"un solo archivo",body:"La web entera es un HTML. El contenido vive en un array de datos.",orb:"calm",say:"Cambiás los datos y cambio yo.",demo:"los textos de este ejemplo son de relleno",items:[
+ {l:"Capítulos",x:"Una pantalla por idea, con su título y una frase."},
+ {l:"Modos del orbe",x:"Cada capítulo elige cómo se mueve el orbe.",k:"feature"},
+ {l:"Escenas",x:"Animaciones en canvas para mostrar un mecanismo."},
+ {l:"Poco texto",x:"Si no entra en una pantalla, sobra.",k:"callout"}]},
+{id:"cierre",layout:"center",kicker:"Para cerrar",title:"Primero la base. Después, todo lo demás.",hl:"todo lo demás",body:"Una historia, un orbe y un mundo oscuro. Lo demás es contenido.",orb:"bright",say:"Gracias por llegar hasta acá."}
+];
+// texto alternativo de cada escena (data-kx), por nombre
+var SCENE_ALT = {};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: una historia en capítulos de pantalla completa sobre un orbe de partículas fijo. Entra por una puerta: el orbe chico
+   en el centro; tocarlo dispara el tráiler (las partículas escriben palabras, implosionan y nace el orbe).
+   Los capítulos con escena (motion-scenes) muestran el mecanismo en un canvas y el orbe se corre a una esquina. Mundo oscuro único. */
+:root{
+  --bg:#03050A;
+  --ink:#EEF4F6;
+  --soft:#A3B0BA;
+  --faint:#66737D;
+  --cyan:#00E5FF;
+  --cyan-soft:#8FF3FF;
+  --glass:rgba(12,20,28,0.52);
+  --glass-strong:rgba(10,18,26,0.78);
+  --line:rgba(143,243,255,0.16);
+  --display:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --body:'Instrument Sans','Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html{scroll-snap-type:y proximity;scroll-behavior:smooth;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body.off{overflow:hidden}
+
+#stage{position:fixed;inset:0;z-index:0;pointer-events:none}
+#stage canvas{display:block;width:100%;height:100%}
+#glow{position:fixed;left:0;top:0;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:0;
+  background:radial-gradient(circle, rgba(0,229,255,0.30) 0%, rgba(0,229,255,0.10) 35%, rgba(0,229,255,0) 68%);
+  filter:blur(30px);transform:translate(-50%,-50%);will-change:transform,width,height,opacity}
+#words{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.word{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:13px;letter-spacing:0.04em;color:var(--ink);will-change:transform,filter,opacity}
+.word i{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px 2px rgba(0,229,255,0.7)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, rgba(3,5,10,0) 45%, rgba(3,5,10,0.75) 100%)}
+@media (max-width:760px){
+  #vignette{background:linear-gradient(to top, rgba(3,5,10,0.94) 0%, rgba(3,5,10,0.82) 38%, rgba(3,5,10,0) 62%)}
+}
+
+/* chrome */
+.top{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding-top:calc(18px + env(safe-area-inset-top,0px));padding-bottom:18px;
+  padding-left:max(20px, env(safe-area-inset-left,0px));padding-right:max(20px, env(safe-area-inset-right,0px));pointer-events:none}
+.brand{display:flex;align-items:center;gap:12px;pointer-events:auto}
+.brand b{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:-0.03em}
+.brand span{font-size:13px;color:var(--faint)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 14px 3px rgba(0,229,255,0.6);flex:0 0 auto}
+.hint{font-size:13px;color:var(--faint);letter-spacing:0.04em}
+@media (max-width:760px){.hint,.brand span{display:none}}
+
+.rail{position:fixed;right:max(20px, env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:6px}
+.rail button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;gap:10px;height:22px;color:var(--faint);font-size:12px;letter-spacing:0.06em}
+.rail button span{opacity:0;transform:translateX(6px);transition:opacity .25s, transform .25s;white-space:nowrap}
+.rail button:hover span,.rail button:focus-visible span{opacity:1;transform:none}
+.rail button i{width:6px;height:6px;border-radius:50%;background:rgba(238,244,246,0.25);transition:all .3s}
+.rail button[aria-current="true"]{color:var(--cyan-soft)}
+.rail button[aria-current="true"] i{width:10px;height:10px;background:var(--cyan);box-shadow:0 0 12px 3px rgba(0,229,255,0.6)}
+.rail button:focus-visible i{outline:2px solid var(--cyan);outline-offset:3px}
+@media (max-width:760px){.rail{display:none}}
+
+/* el orbe narra: cada palabra entra con blur y una subida chica, como los captions de las escenas */
+.narrator{position:fixed;z-index:6;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:12px;max-width:min(560px, calc(100vw - 32px));padding:12px 18px 12px 14px;border-radius:999px;
+  background:var(--glass-strong);border:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);font-size:15px;color:var(--soft);transition:opacity .6s}
+.narrator b{color:var(--ink);font-weight:600;margin-right:6px}
+.narrator .t{min-height:1.4em}
+.narrator .w{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(6px);animation:win .7s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes win{to{opacity:1;filter:none;transform:none}}
+.counter{position:fixed;z-index:6;right:max(20px, env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums;letter-spacing:0.08em}
+@media (max-width:760px){.counter{display:none}.narrator{font-size:14px}}
+body.off main,body.off .rail,body.off .counter,body.off .hint{opacity:0;pointer-events:none}
+main,.rail,.counter,.hint{transition:opacity 1.2s}
+body.off.gate .narrator,html.pre .narrator{opacity:0}
+html.pre main,html.pre .rail,html.pre .counter,html.pre .hint{opacity:0;pointer-events:none}
+
+/* la franja del narrador: abajo nada compite con la burbuja; lo que pasa por detrás se funde con el fondo */
+#band{position:fixed;left:0;right:0;bottom:0;height:calc(104px + env(safe-area-inset-bottom,0px));z-index:4;pointer-events:none;background:linear-gradient(to top, var(--bg) 0%, var(--bg) 52%, rgba(3,5,10,0) 100%)}
+body.off #band{opacity:0}
+
+/* la puerta y el tráiler */
+#gate{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(16vh + env(safe-area-inset-bottom,0px));pointer-events:none;opacity:0;transition:opacity 1s}
+#gate.on{opacity:1}
+#gate.out{opacity:0}
+#begin{all:unset;pointer-events:auto;cursor:pointer;position:fixed;left:50%;top:50%;width:min(44vw,240px);height:min(44vw,240px);transform:translate(-50%,-50%);border-radius:50%}
+#begin:focus-visible{outline:2px solid var(--cyan);outline-offset:6px}
+.gate-cta{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.gate-cta b{font-family:var(--display);font-weight:400;font-size:clamp(22px,2.6vw,30px);letter-spacing:-0.02em}
+.gate-cta span{font-size:13px;color:var(--faint);letter-spacing:0.06em}
+#gate.playing .gate-cta{opacity:0;transition:opacity .4s}
+#skip[hidden]{display:none!important}
+#skip{all:unset;pointer-events:auto;cursor:pointer;position:fixed;z-index:9;right:max(20px, env(safe-area-inset-right,0px));top:calc(20px + env(safe-area-inset-top,0px));font-size:13px;color:var(--soft);letter-spacing:0.06em;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--glass)}
+#skip:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+#tcap{position:fixed;z-index:8;left:50%;transform:translateX(-50%);bottom:calc(13vh + env(safe-area-inset-bottom,0px));font-family:var(--mono);font-size:13px;letter-spacing:0.22em;text-transform:uppercase;color:var(--cyan-soft);pointer-events:none;transition:opacity .5s;white-space:nowrap}
+#title{position:fixed;z-index:8;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding-inline:24px}
+#title b{font-family:var(--display);font-weight:300;font-size:clamp(84px,15vw,220px);line-height:.9;letter-spacing:-0.06em;opacity:0;filter:blur(24px);transform:scale(1.08);transition:opacity 1.4s, filter 1.4s cubic-bezier(.16,1,.3,1), transform 2.4s cubic-bezier(.16,1,.3,1);text-shadow:0 0 60px rgba(0,229,255,.45)}
+#title span{font-size:clamp(15px,1.6vw,19px);color:var(--soft);opacity:0;transition:opacity 1.2s .6s}
+#title.on b{opacity:1;filter:none;transform:none}
+#title.on span{opacity:1}
+#title.out b,#title.out span{opacity:0;filter:blur(14px);transition:opacity .9s, filter .9s}
+#flash{position:fixed;z-index:7;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at var(--fx,50%) var(--fy,50%), rgba(255,255,255,.95) 0%, rgba(143,243,255,.55) 8%, rgba(0,229,255,.18) 26%, rgba(0,229,255,0) 55%)}
+#flash.go{animation:flash 2.2s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes flash{0%{opacity:0}4%{opacity:1}100%{opacity:0}}
+#ring{position:fixed;z-index:7;left:var(--fx,50%);top:var(--fy,50%);width:0;height:0;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;opacity:0;border:2px solid rgba(143,243,255,.9);box-shadow:0 0 30px rgba(0,229,255,.7), inset 0 0 20px rgba(0,229,255,.4)}
+#ring.go{animation:ring 1.6s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes ring{0%{opacity:1;width:0;height:0}100%{opacity:0;width:240vmax;height:240vmax}}
+.shake{animation:shake .45s linear}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(5px,-3px)}40%{transform:translate(-4px,4px)}60%{transform:translate(3px,2px)}80%{transform:translate(-2px,-2px)}}
+
+/* chapters */
+main{position:relative;z-index:2}
+.chapter{box-sizing:border-box;min-height:100vh;min-height:100svh;scroll-snap-align:start;display:flex;align-items:center;
+  padding-block:120px 140px;padding-left:max(24px, env(safe-area-inset-left,0px));padding-right:max(24px, env(safe-area-inset-right,0px))}
+.inner{width:100%;max-width:1280px;margin-inline:auto}
+.copy{max-width:660px;display:flex;flex-direction:column;gap:22px}
+.chapter.center .inner{display:flex;justify-content:center}
+.chapter.center{align-items:flex-end;padding-bottom:16vh}
+.chapter.center .copy{max-width:900px;text-align:center;align-items:center}
+.chapter.roles .inner{display:flex;flex-direction:column;align-items:center;text-align:center}
+.chapter.roles{align-items:stretch}
+.chapter.roles .copy{max-width:1100px;align-items:center;height:100%;justify-content:space-between;width:100%}
+.chapter.scene .inner{max-width:1440px;display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);gap:56px;align-items:center}
+.chapter.scene .copy{max-width:480px}
+.kx-fig{margin:0;border-radius:22px;overflow:hidden;border:1px solid var(--line);box-shadow:0 0 0 1px rgba(0,229,255,.05), 0 30px 80px rgba(0,0,0,.5), 0 0 60px rgba(0,229,255,.06)}
+.kx{width:100%;aspect-ratio:16/10;display:block}
+
+.kicker{font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--cyan-soft);display:flex;align-items:center;gap:10px}
+.kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px 2px rgba(0,229,255,0.7)}
+.chapter.center .kicker,.chapter.roles .kicker{justify-content:center}
+h2{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(40px, 6.2vw, 92px);line-height:1;letter-spacing:-0.045em;text-wrap:balance}
+.chapter.scene h2{font-size:clamp(36px, 4.4vw, 66px)}
+h2 em{font-style:normal;color:var(--cyan-soft);text-shadow:0 0 34px rgba(0,229,255,0.45)}
+.body{margin:0;font-size:clamp(17px, 1.5vw, 20px);color:var(--soft);max-width:560px;text-wrap:pretty}
+.chapter.center .body{margin-inline:auto}
+.note{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--faint);letter-spacing:.02em}
+.note b{color:var(--cyan-soft);font-weight:500}
+
+.fig{display:flex;align-items:baseline;gap:14px}
+.fig strong{font-family:var(--display);font-weight:300;font-size:clamp(72px, 11vw, 168px);line-height:0.9;letter-spacing:-0.05em;color:var(--ink);text-shadow:0 0 50px rgba(0,229,255,0.35)}
+.fig span{font-family:var(--display);font-size:clamp(22px, 2.4vw, 34px);color:var(--cyan-soft)}
+
+.grid{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:10px}
+.card{display:flex;flex-direction:column;gap:6px;padding:18px 20px;border-radius:20px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);min-width:0}
+.card .l{font-weight:600;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:9px}
+.card .l::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px 2px rgba(0,229,255,0.6);flex:0 0 auto}
+.card .x{font-size:15px;color:var(--soft);line-height:1.45}
+.card.feature{border-color:rgba(0,229,255,0.55);box-shadow:0 0 0 1px rgba(0,229,255,0.15), 0 0 40px rgba(0,229,255,0.12) inset}
+.card.callout{grid-column:1 / -1;border-color:rgba(0,229,255,0.4);background:rgba(0,40,52,0.38)}
+.card.callout .l{color:var(--cyan-soft)}
+
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.list li{display:flex;gap:18px;align-items:baseline;padding:16px 0;border-top:1px solid var(--line)}
+.list li:last-child{border-bottom:1px solid var(--line)}
+.list .l{flex:0 0 140px;font-family:var(--display);font-size:22px;color:var(--cyan-soft);letter-spacing:-0.01em}
+.list .x{font-size:17px;color:var(--ink)}
+
+@media (max-width:760px){
+  .chapter{align-items:flex-end;padding-top:44vh;padding-bottom:128px}
+  .chapter.center{padding-bottom:128px}
+  .chapter.scene,.chapter.wide{align-items:center;padding-top:96px}
+  .chapter.scene .inner{grid-template-columns:minmax(0,1fr);gap:22px}
+  .kx-fig{margin-inline:-10px;border-radius:16px}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .list .l{flex-basis:96px;font-size:19px}
+  .list .x{font-size:16px}
+  h2,.chapter.scene h2{font-size:clamp(34px, 9.6vw, 50px)}
+}
+/* desktop: cada capítulo mide exactamente una pantalla y el snap es obligatorio, así scroll, trackpad y teclado caen siempre en el mismo
+   lugar. Los tamaños salen también del alto (vh), para que todo entre entre el header (84 px) y la franja del narrador (104 px). */
+@media (min-width:761px){
+  html{scroll-snap-type:y mandatory}
+  .chapter{box-sizing:border-box;height:100vh;min-height:0;padding-block:84px 104px;scroll-snap-stop:always;overflow:hidden}
+  .chapter.center{align-items:flex-end;padding-bottom:calc(104px + 4vh)}
+  .copy{gap:min(22px, 2.4vh)}
+  h2{font-size:clamp(36px, min(6.2vw, 9vh), 92px)}
+  .chapter.scene h2{font-size:clamp(32px, min(4.4vw, 7vh), 66px)}
+  .body{font-size:clamp(15px, min(1.5vw, 2.2vh), 20px)}
+  .fig strong{font-size:clamp(56px, min(11vw, 15vh), 168px)}
+  .card{padding:min(18px, 1.9vh) 20px}
+  .card .x{font-size:clamp(13px, 1.75vh, 15px)}
+  .list li{padding:min(16px, 1.7vh) 0}
+  .chapter.wide .copy{max-width:1060px}
+  .chapter.wide .grid{grid-template-columns:repeat(3, minmax(0,1fr))}
+  .chapter.wide .list{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));column-gap:40px}
+  .chapter.wide .list li:nth-last-child(-n+2){border-bottom:1px solid var(--line)}
+  .chapter.scene .kx-fig{width:min(100%, calc((100vh - 220px) * 1.6));justify-self:end}
+}
+</style>
+</head><body>
+
+<script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("pre")</script>
+<div id="stage" aria-hidden="true"></div>
+<div id="glow" aria-hidden="true"></div>
+<div id="words" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+<div id="band" aria-hidden="true"></div>
+<div id="flash" aria-hidden="true"></div>
+<div id="ring" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="brand"><i class="dot" aria-hidden="true"></i><b id="brandName"></b><span id="brandTag"></span></div>
+  <div class="hint" id="hint"></div>
+</header>
+
+<div id="gate" hidden>
+  <button id="begin" type="button"></button>
+  <div class="gate-cta"><b id="gateCta"></b><span id="gateSub"></span></div>
+</div>
+<button id="skip" type="button" hidden>Saltar ›</button>
+<div id="tcap" aria-hidden="true"></div>
+<div id="title" aria-hidden="true"><b id="titleName"></b><span id="titleSub"></span></div>
+
+<nav class="rail" id="rail" aria-label="Capítulos"></nav>
+
+<main id="chapters"></main>
+
+<div class="narrator" role="status" aria-live="polite"><i class="dot" aria-hidden="true"></i><div class="t"><b id="narratorName"></b><span id="narratorLine"></span></div></div>
+<div class="counter" id="counter"></div>
+
+<script>
+(function brand(){
+  function set(id,s){document.getElementById(id).textContent=s}
+  document.title=SITE.orb;
+  set("brandName",SITE.name);set("brandTag",SITE.tagline);set("hint",SITE.hint);
+  set("gateCta",SITE.gate.cta);set("gateSub",SITE.gate.sub);document.getElementById("begin").setAttribute("aria-label","Empezar: "+SITE.gate.cta.toLowerCase());
+  set("titleName",SITE.orb);set("titleSub",SITE.subtitle);set("narratorName",SITE.orb);
+})();
+
+(function buildChapters(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function title(c){
+    var t=esc(c.title);
+    if(c.hl){var h=esc(c.hl);var i=t.indexOf(h);if(i>=0)t=t.slice(0,i)+"<em>"+h+"</em>"+t.slice(i+h.length)}
+    return t;
+  }
+  var main=document.getElementById("chapters"),rail=document.getElementById("rail"),html="",rh="";
+  CHAPTERS.forEach(function(c,i){
+    var items="";
+    if(c.items&&c.type==="grid"){
+      items='<div class="grid">'+c.items.map(function(it){return '<div class="card'+(it.k?" "+it.k:"")+'"><span class="l">'+esc(it.l)+'</span><span class="x">'+esc(it.x)+'</span></div>'}).join("")+'</div>';
+    }else if(c.items&&c.type==="list"){
+      items='<ul class="list">'+c.items.map(function(it){return '<li><span class="l">'+esc(it.l)+'</span><span class="x">'+esc(it.x)+'</span></li>'}).join("")+'</ul>';
+    }
+    var fig=c.fig?'<div class="fig"><span>'+esc(c.fig.u)+'</span><strong>'+esc(c.fig.n)+'</strong></div>':"";
+    var head='<p class="kicker">'+esc(c.kicker)+'</p><h2>'+title(c)+'</h2>';
+    var body=c.body?'<p class="body">'+esc(c.body)+'</p>':"";
+    var note=c.demo?'<p class="note"><b>DEMO</b> · '+esc(c.demo)+'</p>':"";
+    var scene=c.scene?'<figure class="kx-fig"><canvas class="kx" data-kx="'+c.scene+'" role="img" aria-label="'+esc(SCENE_ALT[c.scene]||c.title)+'"></canvas></figure>':"";
+    var inner='<div class="copy">'+head+fig+body+items+note+'</div>'+scene;
+    html+='<section class="chapter '+c.layout+'" id="'+c.id+'" data-i="'+i+'" aria-label="'+esc(c.kicker)+'"><div class="inner">'+inner+'</div></section>';
+    rh+='<button type="button" data-i="'+i+'" aria-label="'+esc(c.kicker)+'"'+(i===0?' aria-current="true"':'')+'><span>'+esc(c.kicker)+'</span><i></i></button>';
+  });
+  main.innerHTML=html;rail.innerHTML=rh;
+})();
+
+var reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+// el orbe dice una línea: palabra por palabra, con blur y subida (≈70 ms entre palabras)
+function say(txt){
+  var line=document.getElementById("narratorLine");line.textContent="";
+  if(reduceMotion){line.textContent=txt;return}
+  var ws=txt.split(" ");
+  ws.forEach(function(w,k){var s=document.createElement("span");s.className="w";s.style.animationDelay=(k*70)+"ms";s.textContent=w;line.appendChild(s);if(k<ws.length-1)line.appendChild(document.createTextNode(" "))});
+}
+
+var STATE={i:-1};
+(function nav(){
+  var secs=[].slice.call(document.querySelectorAll(".chapter"));
+  var btns=[].slice.call(document.querySelectorAll("#rail button"));
+  var counter=document.getElementById("counter");
+  function pad(n){return (n<10?"0":"")+n}
+  function activate(i){
+    if(i===STATE.i)return;STATE.i=i;
+    btns.forEach(function(b,j){b.setAttribute("aria-current",j===i?"true":"false")});
+    counter.textContent=pad(i+1)+" / "+pad(secs.length);
+    if(!document.body.classList.contains("off"))say(CHAPTERS[i].say);
+    if(window.__orbSet)window.__orbSet(i);
+  }
+  window.__activate=activate;
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)activate(+e.target.dataset.i)})},{rootMargin:"-45% 0px -45% 0px"});
+  secs.forEach(function(s){io.observe(s)});
+  var want=null,wantT=0;
+  function here(){if(want!==null&&performance.now()-wantT<900)return want;var y=scrollY+innerHeight/2,k=0;secs.forEach(function(s,j){if(s.offsetTop<=y)k=j});return k}
+  function go(i){i=Math.max(0,Math.min(secs.length-1,i));want=i;wantT=performance.now();scrollTo({top:secs[i].offsetTop,behavior:reduceMotion?"auto":"smooth"})}
+  btns.forEach(function(b){b.addEventListener("click",function(){go(+b.dataset.i)})});
+  addEventListener("keydown",function(e){
+    if(document.body.classList.contains("off"))return;
+    if(e.target.closest&&e.target.closest("input,textarea,button"))return;
+    if(["ArrowDown","ArrowRight","PageDown"," "].indexOf(e.key)>=0){e.preventDefault();go(here()+1)}
+    else if(["ArrowUp","ArrowLeft","PageUp"].indexOf(e.key)>=0){e.preventDefault();if(here()===0&&scrollY<=2&&window.__gate)window.__gate();else go(here()-1)}
+    else if(e.key==="Home"){e.preventDefault();go(0)}else if(e.key==="End"){e.preventDefault();go(secs.length-1)}
+  });
+  counter.textContent="01 / "+pad(secs.length);
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* El orbe: N partículas en un ShaderMaterial aditivo. Cada una gira alrededor de su eje (anillos o nube);
+   los modos mueven uniforms (dispersar, anillos, pulso, dividir en tres, brillo) y el tráiler usa aF0/aF1 para escribir texto. */
+(function orb(){
+  if(typeof THREE==="undefined"){window.__noOrb=true;return}
+  var stage=document.getElementById("stage"),glow=document.getElementById("glow"),wordsEl=document.getElementById("words");
+  var mobile=matchMedia("(max-width: 760px)").matches;
+  var pace=reduceMotion?0.25:1;
+  var renderer;
+  try{renderer=new THREE.WebGLRenderer({antialias:false,alpha:true,powerPreference:"high-performance"})}catch(e){window.__noOrb=true;return}
+  var PR=Math.min(window.devicePixelRatio||1,2);
+  renderer.setPixelRatio(PR);renderer.setClearColor(0x000000,0);
+  stage.appendChild(renderer.domElement);
+  var scene=new THREE.Scene();
+  var camera=new THREE.PerspectiveCamera(45,1,0.1,100);camera.position.set(0,0,4.6);
+
+  var N=mobile?36000:80000,RINGS=44;
+  var rnd=Math.random;
+  function unit(){var x,y,z,l;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;l=x*x+y*y+z*z}while(l>1||l<1e-4);l=Math.sqrt(l);return [x/l,y/l,z/l]}
+  function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}
+  function norm(a){var l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l]}
+  var axes=[],ringR=[];for(var k=0;k<RINGS;k++){axes.push(unit());ringR.push(0.72+rnd()*0.5)}
+  var P=new Float32Array(N*3),A=new Float32Array(N*3),D=new Float32Array(N*4),S=new Float32Array(N*3),R=new Float32Array(N),G=new Float32Array(N);
+  for(var i=0;i<N;i++){
+    var ax,r,sp,ring=0;
+    if(rnd()<0.38){var kk=i%RINGS,a=axes[kk];ax=norm([a[0]+(rnd()-0.5)*0.08,a[1]+(rnd()-0.5)*0.08,a[2]+(rnd()-0.5)*0.08]);r=ringR[kk]+(rnd()-0.5)*0.02;sp=(0.16+(kk%9)/36)*(kk%2?1:-1);ring=1}
+    else{ax=unit();r=0.25+Math.pow(rnd(),0.3)*0.8;sp=(0.04+rnd()*0.14)*(rnd()<0.5?1:-1)}
+    var b=norm(cross(ax,unit()));
+    P[i*3]=b[0];P[i*3+1]=b[1];P[i*3+2]=b[2];
+    A[i*3]=ax[0];A[i*3+1]=ax[1];A[i*3+2]=ax[2];
+    D[i*4]=rnd()*6.2832;D[i*4+1]=sp;D[i*4+2]=r;D[i*4+3]=rnd()*100;
+    S[i*3]=(rnd()-0.5)*7.5;S[i*3+1]=(rnd()-0.5)*4.2;S[i*3+2]=(rnd()-0.5)*3;
+    R[i]=ring;G[i]=i%3;
+  }
+  var F0=new Float32Array(N*3),F1=new Float32Array(N*3);
+  var geo=new THREE.BufferGeometry();
+  geo.setAttribute("position",new THREE.BufferAttribute(P,3));
+  geo.setAttribute("aAxis",new THREE.BufferAttribute(A,3));
+  geo.setAttribute("aData",new THREE.BufferAttribute(D,4));
+  geo.setAttribute("aScat",new THREE.BufferAttribute(S,3));
+  geo.setAttribute("aRing",new THREE.BufferAttribute(R,1));
+  geo.setAttribute("aGroup",new THREE.BufferAttribute(G,1));
+  geo.setAttribute("aF0",new THREE.BufferAttribute(F0,3));
+  geo.setAttribute("aF1",new THREE.BufferAttribute(F1,3));
+  var U={uTime:{value:0},uScatter:{value:0},uRing:{value:0},uPulse:{value:0},uSplit:{value:0},uBright:{value:1},
+    uSize:{value:mobile?7.5:8.5},uPR:{value:PR},uH:{value:900},uMouse:{value:new THREE.Vector3(99,99,0)},uMouseOn:{value:0},
+    uRot:{value:new THREE.Matrix3()},uOff0:{value:new THREE.Vector3(-1.5,0,0)},uOff1:{value:new THREE.Vector3(0,0,0)},uOff2:{value:new THREE.Vector3(1.5,0,0)},
+    uFig:{value:0},uMix:{value:0},uImp:{value:0},uSwirl:{value:0},
+    uColor:{value:new THREE.Color(0x00e5ff)}};
+  var mat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending,
+    vertexShader:[
+    "attribute vec3 aAxis;attribute vec4 aData;attribute vec3 aScat;attribute float aRing;attribute float aGroup;attribute vec3 aF0;attribute vec3 aF1;",
+    "uniform float uTime,uScatter,uRing,uPulse,uSplit,uSize,uPR,uH,uMouseOn,uFig,uMix,uImp,uSwirl;uniform vec3 uMouse,uOff0,uOff1,uOff2;uniform mat3 uRot;",
+    "varying float vA;varying float vW;",
+    "void main(){",
+    " float ang=aData.x+uTime*aData.y;",
+    " vec3 b=position;vec3 c=cross(aAxis,b);",
+    " float r=aData.z*(1.0+0.05*sin(ang*3.0+aData.w))*(1.0+0.035*sin(uTime*0.9));",
+    " r*=1.0+uPulse*0.08*sin(uTime*3.0-aData.z*6.0);",
+    " vec3 p=uRot*((b*cos(ang)+c*sin(ang))*r);",
+    " vec3 off=aGroup<0.5?uOff0:(aGroup<1.5?uOff1:uOff2);",
+    " p=p*mix(1.0,0.42,uSplit)+off*uSplit;",
+    " vec3 s=aScat+vec3(sin(uTime*0.3+aData.w),cos(uTime*0.25+aData.w*1.3),sin(uTime*0.2+aData.w*0.7))*0.22;",
+    " p=mix(p,s,uScatter);",
+    // el tráiler: las partículas forman una figura (mix entre dos), y después implosionan en espiral hacia un punto
+    " vec3 f=mix(aF0,aF1,uMix)+vec3(sin(uTime*1.7+aData.w),cos(uTime*1.3+aData.w*2.1),0.0)*0.006;",
+    " float fd=clamp(uFig*1.15-fract(aData.w*0.37)*0.15,0.0,1.0);",
+    " p=mix(p,f,fd*fd*(3.0-2.0*fd));",
+    " float sw=uSwirl*(1.6-min(length(p),1.6));float cs=cos(sw),sn=sin(sw);",
+    " p.xy=mat2(cs,-sn,sn,cs)*p.xy;p*=1.0-uImp;",
+    " vec4 wp=modelMatrix*vec4(p,1.0);",
+    " vec3 d=wp.xyz-uMouse;float fo=uMouseOn/(1.0+dot(d,d)*7.0);",
+    " wp.xyz+=normalize(d+vec3(1e-4))*fo*0.32;",
+    " vW=clamp(fo*1.8+uImp*uImp*1.2,0.0,1.0);",
+    " vec4 mv=viewMatrix*wp;gl_Position=projectionMatrix*mv;",
+    " float tw=0.72+0.28*sin(uTime*2.6+aData.w*7.0);",
+    " float rb=mix(1.0,aRing>0.5?1.8:0.3,uRing);",
+    " vA=tw*rb*(1.0-uScatter*0.35)*mix(1.0,1.15,uFig);",
+    " gl_PointSize=uSize*uPR*(uH/900.0)*(1.0+aRing*0.25)*mix(1.0,0.9,uFig)/-mv.z;",
+    "}"].join("\n"),
+    fragmentShader:[
+    "uniform vec3 uColor;uniform float uBright;varying float vA;varying float vW;",
+    "void main(){vec2 q=gl_PointCoord-0.5;float d=length(q)*2.0;if(d>1.0)discard;float a=pow(1.0-d,2.2);",
+    " vec3 col=mix(uColor,vec3(1.0),vW*0.85);gl_FragColor=vec4(col,a*vA*uBright*0.55);}"].join("\n")});
+  var pts=new THREE.Points(geo,mat);pts.frustumCulled=false;scene.add(pts);
+
+  // palabras que orbitan
+  var info=SITE.words.map(function(w,j){var ax=unit(),b=norm(cross(ax,unit()));var el=document.createElement("div");el.className="word";el.innerHTML="<i></i>";el.appendChild(document.createTextNode(w));wordsEl.appendChild(el);
+    return {el:el,b:b,c:cross(ax,b),ph:rnd()*6.2832,sp:(0.05+rnd()*0.05)*(j%2?1:-1),r:1.42+rnd()*0.22,s:[(rnd()-0.5)*6.5,(rnd()-0.5)*3.6,(rnd()-0.5)*2]}});
+
+  // modos: s scatter · r anillos · p pulso · x dividir en tres · b brillo
+  var MODES={calm:{s:0,r:0,p:0,x:0,b:1},scatter:{s:1,r:0,p:0,x:0,b:0.8},gather:{s:0,r:0,p:0,x:0,b:1.25},dim:{s:0,r:0,p:0,x:0,b:0.5},
+    ring:{s:0,r:1,p:0,x:0,b:1.05},pulse:{s:0,r:0,p:1,x:0,b:1.1},split3:{s:0,r:0,p:0,x:1,b:1},bright:{s:0,r:0,p:0,x:0,b:1.55}};
+  var cur={s:0,r:0,p:0,x:0,b:1},tgt=MODES.calm,layout="gate",companion=0;
+  var tPos=new THREE.Vector3(),tScale=1;
+  var W=1,H=1,halfH=1,halfW=1;
+  function size(){W=innerWidth;H=innerHeight;mobile=W<=760;renderer.setSize(W,H,false);camera.aspect=W/H;camera.updateProjectionMatrix();U.uH.value=H;
+    halfH=Math.tan(camera.fov*Math.PI/360)*camera.position.z;halfW=halfH*camera.aspect;
+    var sp=Math.min(1.5,halfW*0.42);U.uOff0.value.set(-sp,0,0);U.uOff2.value.set(sp,0,0);place()}
+  function place(){
+    if(layout==="gate"){tScale=mobile?0.42:0.5;tPos.set(0,0,0);return}
+    if(layout==="trailer"){tScale=1;tPos.set(0,0,0);return}
+    // en un capítulo con escena o grilla, el orbe se corre a una esquina y acompaña
+    if(layout==="scene"||layout==="wide"){tScale=mobile?0.16:0.2;if(mobile)tPos.set(halfW*0.72,halfH*0.8,0);else tPos.set(-halfW*0.84,halfH*(layout==="wide"?0.74:0.6),0);return}
+    if(mobile){tScale=0.62;tPos.set(0,halfH*0.46,0)}
+    else if(layout==="side"){tScale=1;tPos.set(halfW*0.44,0,0)}
+    else{tScale=0.9;tPos.set(0,halfH*0.3,0)}
+    if(tgt===MODES.scatter){tPos.x=0;tPos.y=mobile?halfH*0.3:0;tScale=1}
+  }
+  window.__orbSet=function(i){if(layout==="gate"||layout==="trailer")return;var c=CHAPTERS[i];tgt=c.layout==="scene"||c.layout==="wide"?MODES.calm:(MODES[c.orb]||MODES.calm);layout=c.layout;place()};
+  addEventListener("resize",size);size();
+  pts.position.copy(tPos);pts.scale.setScalar(tScale);
+
+  // figuras del tráiler: un texto rasterizado y muestreado en N puntos (coordenadas del mundo, mirando a cámara)
+  function figure(txt,out){
+    var c=document.createElement("canvas"),x=c.getContext("2d"),fs=240;
+    x.font="600 "+fs+"px 'Bricolage Grotesque', 'Instrument Sans', sans-serif";
+    var m=x.measureText(txt),tw=Math.ceil(m.width)+40,th=Math.ceil(fs*1.25);
+    c.width=tw;c.height=th;x.font="600 "+fs+"px 'Bricolage Grotesque', 'Instrument Sans', sans-serif";x.fillStyle="#fff";x.textBaseline="middle";x.textAlign="center";x.fillText(txt,tw/2,th/2);
+    var d=x.getImageData(0,0,tw,th).data,list=[];
+    for(var yy=0;yy<th;yy+=2)for(var xx=0;xx<tw;xx+=2)if(d[(yy*tw+xx)*4+3]>128)list.push(xx,yy);
+    var k=Math.min(Math.min(halfW*1.6,3.4)/tw,halfH*0.62/th),n=list.length/2;
+    for(var i=0;i<N;i++){var j=(Math.random()*n|0)*2;out[i*3]=(list[j]+Math.random()*2-tw/2)*k;out[i*3+1]=-(list[j+1]+Math.random()*2-th/2)*k;out[i*3+2]=(Math.random()-0.5)*0.06}
+  }
+  window.__orb={U:U,
+    mode:function(m){layout=m;if(m==="gate"||m==="trailer")tgt=MODES.calm;place()},
+    fig:function(slot,txt){figure(txt,slot?F1:F0);geo.attributes[slot?"aF1":"aF0"].needsUpdate=true},
+    screen:function(){var v=pts.position.clone().project(camera);return {x:(v.x+1)/2*W,y:(1-v.y)/2*H}}};
+
+  // puntero: el orbe esquiva el mouse y se puede girar arrastrando
+  var mouse=new THREE.Vector3(99,99,0),mOn=0,rotX=0.35,rotY=0,vel=0.12,velX=0,drag=false,lx=0,ly=0;
+  function toWorld(cx,cy){var v=new THREE.Vector3(cx/W*2-1,-(cy/H)*2+1,0.5).unproject(camera).sub(camera.position).normalize();var t=-camera.position.z/v.z;return camera.position.clone().add(v.multiplyScalar(t))}
+  addEventListener("pointermove",function(e){mouse.copy(toWorld(e.clientX,e.clientY));mOn=1;
+    if(drag){var dX=(e.clientX-lx)/W*4,dY=(e.clientY-ly)/H*2;rotY+=dX;rotX=Math.max(-1.1,Math.min(1.1,rotX+dY));vel=Math.max(-6,Math.min(6,dX*60));velX=Math.max(-3,Math.min(3,dY*60));lx=e.clientX;ly=e.clientY}});
+  addEventListener("pointerdown",function(e){if(e.pointerType!=="mouse")return;if(e.target.closest&&e.target.closest("a,button,.card,.list,h2,p,.kx-fig"))return;drag=true;lx=e.clientX;ly=e.clientY;document.body.style.cursor="grabbing"});
+  addEventListener("pointerup",function(){drag=false;document.body.style.cursor=""});
+  document.addEventListener("pointerleave",function(){mOn=0});
+  addEventListener("blur",function(){mOn=0});
+
+  var m4=new THREE.Matrix4(),eul=new THREE.Euler(),v=new THREE.Vector3(),v2=new THREE.Vector3();
+  var last=performance.now(),t=0;
+  function lerp(a,b,k){return a+(b-a)*k}
+  function frame(now){
+    var dt=Math.min(0.05,(now-last)/1000);last=now;t+=dt*pace;
+    if(window.__trailer)window.__trailer(now);
+    if(!drag){vel+=(0.12-vel)*0.025;velX*=0.94;rotY+=vel*dt*pace;rotX=Math.max(-1.1,Math.min(1.1,rotX+velX*dt));rotX+=(0.35-rotX)*0.005}
+    var k=1-Math.pow(0.02,dt);
+    cur.s=lerp(cur.s,tgt.s,k*0.9);cur.r=lerp(cur.r,tgt.r,k);cur.p=lerp(cur.p,tgt.p,k);cur.x=lerp(cur.x,tgt.x,k*0.9);cur.b=lerp(cur.b,tgt.b,k);
+    companion=lerp(companion,layout==="scene"||layout==="wide"?1:0,k);
+    U.uScatter.value=cur.s;U.uRing.value=cur.r;U.uPulse.value=cur.p;U.uSplit.value=cur.x;U.uTime.value=t;
+    if(!window.__trailer)U.uBright.value=cur.b;
+    U.uMouseOn.value=lerp(U.uMouseOn.value,mOn*(1-U.uFig.value),k);U.uMouse.value.lerp(mouse,0.25);
+    var fast=layout==="trailer"?1:0.8;
+    pts.position.lerp(tPos,k*fast);var sc=lerp(pts.scale.x,tScale,k*fast);pts.scale.setScalar(sc);
+    eul.set(rotX,rotY,0);m4.makeRotationFromEuler(eul);U.uRot.value.setFromMatrix4(m4);
+    renderer.render(scene,camera);
+
+    // el glow sigue al orbe
+    v.copy(pts.position).project(camera);v2.set(pts.position.x+1.3*sc,pts.position.y,0).project(camera);
+    var gx=(v.x+1)/2*W,gy=(1-v.y)/2*H,gr=Math.abs(v2.x-v.x)/2*W;
+    var gs=gr*(3.4-cur.x*0.6)*(1+cur.s*0.8)*(1+U.uImp.value*0.6);
+    glow.style.width=gs+"px";glow.style.height=gs+"px";glow.style.transform="translate("+(gx-gs/2)+"px,"+(gy-gs/2)+"px)";
+    glow.style.opacity=String(Math.min(1,0.35+U.uBright.value*0.45)*(1-cur.s*0.5)*(1-U.uFig.value*0.6));
+
+    // palabras
+    var wf=(1-cur.x)*(1-companion)*(1-U.uFig.value)*(1-U.uImp.value);pts.updateMatrixWorld();
+    for(var n=0;n<info.length;n++){
+      var o=info[n],a2=o.ph+t*o.sp,c2=Math.cos(a2),s2=Math.sin(a2);
+      v.set((o.b[0]*c2+o.c[0]*s2)*o.r,(o.b[1]*c2+o.c[1]*s2)*o.r,(o.b[2]*c2+o.c[2]*s2)*o.r).applyMatrix3(U.uRot.value);
+      var depth=v.z;
+      v.x=lerp(v.x,o.s[0],cur.s);v.y=lerp(v.y,o.s[1],cur.s);v.z=lerp(v.z,o.s[2],cur.s);
+      v.applyMatrix4(pts.matrixWorld);
+      var wz=v.z;v.project(camera);
+      var px=(v.x+1)/2*W,py=(1-v.y)/2*H;
+      var front=Math.max(0,Math.min(1,(lerp(depth,wz,cur.s)+1.2)/2.4));
+      o.el.style.transform="translate("+px.toFixed(1)+"px,"+py.toFixed(1)+"px)";
+      o.el.style.opacity=((0.12+0.8*front)*wf*(mobile?0.75:1)).toFixed(3);
+      o.el.style.filter="blur("+((1-front)*5).toFixed(2)+"px)";
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<script>
+/* La puerta y el tráiler (~13 s, sin música). Un solo reloj (performance.now) maneja todo:
+   0.0–7.1   las partículas del orbe escriben SITE.trailer.words, una cada 1.6 s
+   7.8–9.4   implosión: todo cae en espiral a un punto, cada vez más rápido
+   9.4–9.6   un instante de nada
+   9.6       big bang: destello, onda, temblor; el orbe nace de ese punto (sobrepasa y se asienta)
+   10.4–12.8 el nombre del orbe se arma desde el blur · 12.8 se abre la página
+   Tocar el orbe lo dispara. Scrollear, Esc o "Saltar" entran directo. Arriba de todo, seguir para arriba vuelve a la puerta.
+   Con reduced motion no hay puerta. */
+(function intro(){
+  var body=document.body,root=document.documentElement,gate=document.getElementById("gate"),skip=document.getElementById("skip"),tcap=document.getElementById("tcap"),title=document.getElementById("title");
+  var flash=document.getElementById("flash"),ring=document.getElementById("ring"),stage=document.getElementById("stage"),O=window.__orb;
+  if(reduceMotion||!O||window.__noOrb){root.classList.remove("pre");gate.remove();say(CHAPTERS[0].say);if(O)O.mode("center");return}
+  var inGate=false,started=false,closing=0;
+  function open(){
+    if(!inGate)return;inGate=false;window.__trailer=null;
+    body.classList.remove("off","gate");root.classList.remove("pre");gate.classList.add("out");clearTimeout(closing);closing=setTimeout(function(){gate.hidden=true},1100);
+    skip.hidden=true;tcap.style.opacity=0;title.classList.add("out");
+    O.U.uFig.value=0;O.U.uImp.value=0;O.U.uSwirl.value=0;O.mode("center");STATE.i=-1;
+    var h=location.hash&&document.querySelector(location.hash);if(h&&!open.once){h.scrollIntoView();if(h.dataset.i)window.__activate(+h.dataset.i)}else{window.__activate(0);scrollTo(0,0)}open.once=true;
+  }
+  function show(){
+    if(inGate)return;inGate=true;started=false;clearTimeout(closing);window.__trailer=null;
+    scrollTo({top:0,behavior:"auto"});body.classList.add("off","gate");
+    gate.hidden=false;gate.classList.remove("out","playing","on");title.classList.remove("on","out");tcap.textContent="";tcap.style.opacity=0;
+    [flash,ring].forEach(function(el){el.classList.remove("go")});stage.classList.remove("shake");
+    O.U.uFig.value=0;O.U.uImp.value=0;O.U.uSwirl.value=0;O.U.uBright.value=1;O.mode("gate");
+    requestAnimationFrame(function(){requestAnimationFrame(function(){gate.classList.add("on")})});
+  }
+  window.__gate=show;
+  // en la puerta: bajar entra directo; en el tráiler solo cuentan Esc y "Saltar"
+  addEventListener("wheel",function(e){if(inGate&&!started&&e.deltaY>8)open()},{passive:true});
+  addEventListener("touchmove",function(){if(inGate&&!started)open()},{passive:true});
+  addEventListener("keydown",function(e){if(!inGate)return;if(e.key==="Escape"||(!started&&["ArrowDown","PageDown"," ","End"].indexOf(e.key)>=0))open()});
+  skip.onclick=open;
+  document.getElementById("begin").onclick=function(){if(!inGate||started)return;started=true;play()};
+  // arriba de todo, seguir para arriba (rueda, trackpad o tirar hacia abajo en el celu) vuelve a la puerta
+  var pull=0,pullT=0,ty=null,topSince=0;
+  addEventListener("scroll",function(){topSince=scrollY<=2?(topSince||performance.now()):0},{passive:true});
+  addEventListener("wheel",function(e){var now=performance.now();if(scrollY<=2&&!topSince)topSince=now;if(inGate||scrollY>2||e.deltaY>=0||now-topSince<500){pull=0;return}if(now-pullT>700)pull=0;pullT=now;pull+=-e.deltaY;if(pull>260){pull=0;show()}},{passive:true});
+  addEventListener("touchstart",function(e){ty=scrollY<=0&&!inGate?e.touches[0].clientY:null},{passive:true});
+  addEventListener("touchend",function(e){if(ty!==null&&e.changedTouches[0].clientY-ty>110&&scrollY<=0)show();ty=null},{passive:true});
+
+  function pr(t,a,b){return Math.max(0,Math.min(1,(t-a)/(b-a)))}
+  function io(p){return p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2}
+  function out(p){return 1-Math.pow(1-p,3)}
+  function lerp(a,b,k){return a+(b-a)*k}
+  function play(){
+    gate.classList.add("playing");body.classList.remove("gate");skip.hidden=false;say(SITE.trailer.start);
+    var FIG=SITE.trailer.words,AT=[0,1.6,3.2,4.8,6.4],shown=-1,banged=false,t0=performance.now();
+    O.fig(0,FIG[0]);O.fig(1,FIG[1]);O.mode("trailer");
+    window.__trailer=function(now){
+      var t=(now-t0)/1000,U=O.U;
+      for(var k=1;k<FIG.length;k++)if(t>=AT[k]-.25&&shown<k){shown=k;if(k>=2)O.fig(k%2,FIG[k])}
+      var mix=0;for(var j=1;j<FIG.length;j++){var p=io(pr(t,AT[j],AT[j]+.7));mix=j%2?lerp(mix,1,p):lerp(mix,0,p)}
+      U.uMix.value=mix;
+      U.uFig.value=t<9.6?io(pr(t,.1,1.1)):0;
+      var last=FIG.length-1,ix=Math.max(0,Math.min(last,Math.floor((t-.45)/1.6)));
+      var cap=t<.5?"":t<7.6?(ix===last?SITE.trailer.ask:FIG[ix]):"";
+      if(tcap.dataset.c!==cap){tcap.dataset.c=cap;tcap.style.opacity=0;setTimeout(function(){tcap.textContent=cap;tcap.style.opacity=cap?1:0},cap?180:0)}
+      var im=Math.pow(pr(t,7.8,9.4),1.8);
+      U.uImp.value=t<9.6?im:0;U.uSwirl.value=t<9.6?im*7:0;
+      U.uBright.value=t<7.8?1+0.5*U.uFig.value:t<9.4?1+im*1.4:t<9.6?0:lerp(2.2,1,out(pr(t,9.6,11.5)));
+      if(t>=9.6&&!banged){banged=true;var s=O.screen();root.style.setProperty("--fx",s.x+"px");root.style.setProperty("--fy",s.y+"px");
+        [flash,ring].forEach(function(el){el.classList.remove("go");void el.offsetWidth;el.classList.add("go")});
+        stage.classList.remove("shake");void stage.offsetWidth;stage.classList.add("shake");O.mode("center");say(SITE.trailer.bang)}
+      if(t>=9.6&&t<11.6){var q=out(pr(t,9.6,11.2));var sc=q<1?(0.02+1.15*q-0.15*q*q*q):1;U.uImp.value=1-Math.min(1,sc)}
+      if(t>10.4&&!title.classList.contains("on"))title.classList.add("on");
+      if(t>12.8)open();
+    };
+  }
+  // ?intro=play arranca el tráiler solo, ?intro=skip entra directo (para revisar frames)
+  var q=(location.search.match(/intro=(\w+)/)||[])[1];
+  show();
+  if(q==="play")setTimeout(function(){started=true;play()},600);if(q==="skip")setTimeout(open,100);
+})();
+</script>
+
+<!-- Escenas (opcional): si algún capítulo tiene `scene`, sumá el motor de motion-scenes y tus escenas acá.
+     Para publicar como un solo archivo, pegá su contenido dentro de <script>…</script> en vez de usar src.
+<script src="engine.js"></script>
+<script src="scenes.js"></script>
+-->
+</body></html>

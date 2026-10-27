@@ -1,0 +1,9 @@
+{
+  "engine": "scripts/engine.js",
+  "orb": "scripts/orb.js",
+  "page": "assets/page.html",
+  "scenes": "assets/scenes.js",
+  "script": "assets/script.md",
+  "voice": "assets/voice.txt",
+  "grammar": "assets/grammar.md"
+}

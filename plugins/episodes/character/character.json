@@ -1,0 +1,115 @@
+{
+  "name": "sunday",
+  "display_name": "Sunday",
+  "owner": null,
+  "language": "en",
+  "voice": {
+    "provider": "elevenlabs",
+    "voice_id": null,
+    "models": [
+      "eleven_v3",
+      "eleven_multilingual_v2"
+    ],
+    "tagged_models": [
+      "eleven_v4",
+      "eleven_v3"
+    ],
+    "settings": {}
+  },
+  "fonts": {
+    "sans": "\"Plus Jakarta Sans\",system-ui,-apple-system,sans-serif",
+    "body": "Inter,system-ui,sans-serif",
+    "mono": "\"JetBrains Mono\",ui-monospace,Menlo,monospace",
+    "google": "family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:ital,wght@0,400;0,500;1,500&family=JetBrains+Mono:wght@400;500;600;700"
+  },
+  "colors": {
+    "night": "#08070E",
+    "card": "#0D0B18",
+    "card2": "#131126",
+    "rule": "#24213C",
+    "steel": "#7D91B0",
+    "ice": "#B0D1FF",
+    "text": "#C9CFE0",
+    "white": "#FFFFFF",
+    "violet": "#8B5CF6",
+    "lav": "#A78BFA",
+    "pink": "#FF00A1",
+    "red": "#FF3E60",
+    "orange": "#FF6447",
+    "amber": "#FBB040",
+    "green": "#34D399",
+    "teal": "#2DD4BF",
+    "blue": "#60A5FA"
+  },
+  "colors_light": {
+    "night": "#F7F8FE",
+    "card": "#FFFFFF",
+    "card2": "#F1F3FB",
+    "rule": "#D3D9EE",
+    "steel": "#5E6F8C",
+    "ice": "#3B6FD8",
+    "text": "#3B4256",
+    "white": "#0B0A14",
+    "lav": "#7C3AED",
+    "amber": "#D97706",
+    "green": "#16A34A",
+    "teal": "#0D9488",
+    "blue": "#2563EB"
+  },
+  "gradient": {
+    "dark": [
+      "#FF00A1",
+      "#FF3E60",
+      "#FF6447"
+    ],
+    "light": [
+      "#E6008F",
+      "#E8334F",
+      "#E8452E"
+    ]
+  },
+  "orb": {
+    "seed": 7,
+    "spark": "#FF8A29",
+    "moods": {
+      "rest": "#FFFFFF",
+      "watch": "#FBB040",
+      "solve": "#FF6447"
+    },
+    "moods_light": {
+      "rest": "#1A1A1A",
+      "watch": "#8F5200",
+      "solve": "#CC2C0C"
+    },
+    "paper": "#FF9E61"
+  },
+  "gallery": {
+    "locale": "es-AR",
+    "title": "Videos de {name}",
+    "org": null,
+    "hello": "Pasá. Elegí uno.",
+    "hello_named": "Pasá, {viewer}. Elegí uno.",
+    "lead": "Soy {name}. Estas son las historias que aprendí a contar. Cuando termines, contame qué cambiarías.",
+    "badge": "",
+    "badge_note": "",
+    "ideas_title": "¿Qué querés que te cuente después?",
+    "ideas_placeholder": "Una idea para el próximo video",
+    "tandas": [],
+    "idea_reply": "Anotada.",
+    "thanks": [
+      "Gracias. Esto me ayuda a contarlo mejor."
+    ],
+    "like_whispers": [
+      "Lo voy a recordar."
+    ],
+    "read_only": "Tu acceso es solo de lectura: pedile permiso a {owner}."
+  },
+  "todo": [
+    "persona.md: Sunday's personality, voice and arc",
+    "voice.voice_id + voice.settings: pick Sunday's ElevenLabs voice",
+    "owner: who owns Sunday (the gallery names them when access is read-only)",
+    "colors, colors_light, gradient, orb: Sunday's palette (today: the engine's neutral defaults)",
+    "fonts: Sunday's type",
+    "gallery: rewrite the copy in Sunday's voice; tandas = the series and the reply to an idea for each"
+  ]
+}

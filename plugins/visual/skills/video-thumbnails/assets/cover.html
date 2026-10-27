@@ -1,0 +1,100 @@
+<!doctype html>
+<!-- Cover template ("premium" thumbnail for epic and most-voted videos). Grammar of a deck `cover` slide
+     (see references/deck-covers.md), adapted to 1280×720 and 1600×800. compose.mjs opens it as cover.html#<json>.
+     JSON: {img, w, h, title, eyebrow, desc, logo, focus:[fx,fy], zoom, box, scrim, seal, dim, max}
+       img      frame (absolute file path or URL): the hero image, right side, full height
+       title    the video's full title; *word* = coral (one term at most); "|" forces a line break
+       eyebrow  small line above the title, e.g. "Introducing" or "Most voted · October"
+       desc     optional one short sentence under the title (a line of the video, not a hook)
+       logo     optional absolute path to a wordmark (white SVG). Bottom-left, like the slide; without it, no logo
+       focus    point of the frame (0–1, 0–1) that lands at the centre of the hero box
+       zoom     1 = the frame just covers the hero box; >1 crops in
+       box      left edge of the hero box as a fraction of the width (default .40, the slide's asset box)
+       scrim    width of the black→transparent fade over the box's left edge (default .32)
+       seal     optional {rank, label}: subtle round seal on the clean black column, bottom, level with the logo ("Nº 1" + label around the ring)
+       dim      0–1 extra darkening of the hero (default 0)
+       max      cap for the title size in design px (default 96; 150 for a one-word title) -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Brand Sans";src:url("PlusJakartaSans-Variable.ttf") format("truetype");font-weight:200 800}
+:root{--bg:#08070e;--coral:#FF6447;--ink:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);overflow:hidden}
+#stage{position:relative;overflow:hidden;background:var(--bg);font-family:"Brand Sans",sans-serif}
+canvas{position:absolute;inset:0}
+#text{position:absolute;display:flex;flex-direction:column}
+.eyebrow{display:flex;align-items:center;font-weight:700;text-transform:uppercase;color:var(--coral);white-space:nowrap}
+.eyebrow b{display:block;background:var(--coral);flex:none}
+.title{font-weight:800;color:var(--ink);letter-spacing:-.035em;line-height:1;text-wrap:balance}
+.title em{font-style:normal;color:var(--coral)}
+.desc{font-weight:400;color:rgba(255,255,255,.74);letter-spacing:-.005em;line-height:1.3}
+#logo{position:absolute;display:block}
+#seal{position:absolute}
+</style></head><body>
+<div id="stage"><canvas id="cv"></canvas>
+  <div id="text"><div class="eyebrow" id="eb"><b></b><span></span></div><div class="title" id="title"></div><div class="desc" id="desc"></div></div>
+  <img id="logo" alt=""><svg id="seal" viewBox="0 0 200 200"></svg>
+</div>
+<script>
+(async () => {
+const S = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+const W = S.w, H = S.h, u = Math.min(W / 1280, H / 720);    // type scales with the tighter side
+const stage = document.getElementById('stage'); stage.style.width = W + 'px'; stage.style.height = H + 'px';
+const cv = document.getElementById('cv'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
+const BG = '8,7,14', rgba = a => `rgba(${BG},${a})`;
+ctx.fillStyle = rgba(1); ctx.fillRect(0, 0, W, H);
+
+// 1) hero: the frame covers the right box (slide: asset x=40%, full height), focus at the box centre
+const img = new Image(); img.src = S.img.startsWith('/') ? 'file://' + S.img : S.img; await img.decode();
+const bx = (S.box ?? .40) * W, bw = W - bx, iw = img.naturalWidth, ih = img.naturalHeight;
+const sc = Math.max(bw / iw, H / ih) * (S.zoom || 1), dw = iw * sc, dh = ih * sc;
+const [fx, fy] = S.focus || [.5, .5];
+let dx = bx + bw / 2 - fx * dw, dy = H / 2 - fy * dh;
+dx = Math.min(bx, Math.max(W - dw, dx)); dy = Math.min(0, Math.max(H - dh, dy));     // always cover the box
+ctx.save(); ctx.beginPath(); ctx.rect(bx, 0, bw, H); ctx.clip(); ctx.drawImage(img, dx, dy, dw, dh); ctx.restore();
+if (S.dim) { ctx.fillStyle = rgba(S.dim); ctx.fillRect(bx, 0, bw, H); }
+
+// 2) scrim: black→transparent over the box's left edge (the slide's baked scrim PNG), plus soft top/bottom/right
+const sw = (S.scrim ?? .32) * W, g = ctx.createLinearGradient(bx, 0, bx + sw, 0);
+g.addColorStop(0, rgba(1)); g.addColorStop(.5, rgba(.9)); g.addColorStop(1, rgba(0));
+ctx.fillStyle = g; ctx.fillRect(bx, 0, sw, H);
+const v = (y0, y1, a) => { const gv = ctx.createLinearGradient(0, y0, 0, y1); gv.addColorStop(0, rgba(a)); gv.addColorStop(1, rgba(0)); ctx.fillStyle = gv; ctx.fillRect(bx, Math.min(y0, y1), bw, Math.abs(y1 - y0)); };
+v(H, H * .72, .7); v(0, H * .18, .45);
+const gr = ctx.createLinearGradient(W, 0, W - .08 * W, 0); gr.addColorStop(0, rgba(.35)); gr.addColorStop(1, rgba(0)); ctx.fillStyle = gr; ctx.fillRect(W - .08 * W, 0, .08 * W, H);
+
+// 3) text block: eyebrow / title / desc, left margin of the slide (6.9%), centred above the logo
+const mx = .069 * W, col = (S.col || .47) * W;
+const eb = document.getElementById('eb'), ti = document.getElementById('title'), de = document.getElementById('desc'), tx = document.getElementById('text');
+if (S.eyebrow) { eb.querySelector('span').textContent = S.eyebrow; Object.assign(eb.style, {fontSize: 17 * u + 'px', letterSpacing: '.2em', gap: 14 * u + 'px', marginBottom: 22 * u + 'px'});
+  Object.assign(eb.querySelector('b').style, {width: 28 * u + 'px', height: 2 * u + 'px'}); } else eb.remove();
+ti.innerHTML = S.title.replace(/\*([^*]+)\*/g, '<em>$1</em>').replace(/\|/g, '<br>');
+if (S.desc) Object.assign(de, {textContent: S.desc}), Object.assign(de.style, {fontSize: 27 * u + 'px', marginTop: 24 * u + 'px', maxWidth: col * .92 + 'px'}); else de.remove();
+Object.assign(tx.style, {left: mx + 'px', width: col + 'px'});
+await document.fonts.ready;
+const oneWord = !/\s|\|/.test(S.title.trim());
+let fs = (S.max || (oneWord ? 150 : 96)) * u;
+const fits = () => { const lh = parseFloat(getComputedStyle(ti).lineHeight); return ti.scrollWidth <= col + 1 && ti.offsetHeight <= lh * (S.lines || 2) + 2; };
+for (; fs > 44 * u; fs -= 2 * u) { ti.style.fontSize = fs + 'px'; if (fits()) break; }
+const logoTop = H - .075 * H - .1 * W * 135.486 / 601.44;
+tx.style.top = Math.max(.12 * H, (logoTop * .94) / 2 - tx.offsetHeight / 2 + .02 * H) + 'px';
+
+// 4) wordmark bottom-left (white on black, never recoloured)
+const logo = document.getElementById('logo');
+if (S.logo) { logo.src = 'file://' + S.logo; await logo.decode(); Object.assign(logo.style, {left: mx + 'px', width: .1 * W + 'px', bottom: .075 * H + 'px'}); } else logo.remove();
+
+// 5) seal (most voted): thin rings, label around, "Nº n" in the middle. Quiet, on the black column (never over the busy hero)
+const seal = document.getElementById('seal');
+if (S.seal) {
+  const d = 116 * u; Object.assign(seal.style, {width: d + 'px', height: d + 'px', left: bx - .03 * W - d + 'px', bottom: .06 * H + 'px'});
+  const lab = (S.seal.label || 'Most voted').toUpperCase(), rep = (lab + ' · ').repeat(2);
+  seal.innerHTML = `<defs><path id="ring" d="M100,100 m-70,0 a70,70 0 1,1 140,0 a70,70 0 1,1 -140,0"/></defs>
+    <circle cx="100" cy="100" r="96" fill="${rgba(.62)}" stroke="rgba(255,255,255,.26)" stroke-width="1.2"/>
+    <circle cx="100" cy="100" r="54" fill="none" stroke="#FF6447" stroke-opacity=".85" stroke-width="1.4"/>
+    <text font-family="Brand Sans" font-weight="700" font-size="13.5" letter-spacing="3.2" fill="rgba(255,255,255,.82)"><textPath href="#ring" textLength="436" lengthAdjust="spacing">${rep}</textPath></text>
+    <text x="100" y="${S.seal.rank ? 113 : 109}" text-anchor="middle" font-family="Brand Sans" fill="#fff">${S.seal.rank
+      ? `<tspan font-size="17" font-weight="600" dy="-2" fill="rgba(255,255,255,.75)">Nº</tspan><tspan font-size="40" font-weight="800" dx="3" dy="2" letter-spacing="-1">${S.seal.rank}</tspan>`
+      : `<tspan font-size="30" fill="#FF6447">★</tspan>`}</text>`;
+} else seal.remove();
+window.__done = true;
+})().catch(e => { document.title = 'ERR ' + e.message; window.__done = true; window.__err = String(e); });
+</script></body></html>
