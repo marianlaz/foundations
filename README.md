@@ -27,7 +27,7 @@ Para actualizar: `/plugin marketplace update foundations`.
 ## Skills
 
 ### think
-- **`simple`**: dial de profundidad de 0 a 11. Piensa el problema completo y responde al nivel pedido: 0 es una sola cosa dicha simple, 11 es todo con opciones y trade-offs. `/simple 3`. [Demo](https://mariano-builders.vercel.app/demos/simple/).
+- **`simple`**: dial de profundidad de 0 a 7. Piensa el problema completo y responde al nivel pedido: 0 es una sola cosa dicha simple, 7 es todo con opciones y trade-offs. `/simple 3`. Demo: pendiente.
 - **`asd`**: acorta una respuesta a muy corto, medio o largo y la reescribe con reglas ASD-STE100 (oraciones cortas, voz activa, una palabra = un significado). `/asd`, "más corto", "sacale el relleno". [Demo](https://mariano-builders.vercel.app/demos/asd/).
 - **`how-to-work-with-agents`**: catálogo vivo de tips probados para trabajar con Claude Code: separar cuentas trabajo/personal por carpeta, hábitos que rinden. `/wwa`. [Demo](https://mariano-builders.vercel.app/#builders-1).
 
