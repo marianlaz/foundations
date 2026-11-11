@@ -113,6 +113,98 @@ cd ~/Documents/work && claude   # /status → cuenta del trabajo
 
 ---
 
+## Tip 2 · Compartir skills con tu equipo: un marketplace
+
+**Problema.** Armaste una skill que te sirve. Tu equipo la quiere. Si la pasás por
+chat, cada uno queda con una copia distinta y nadie recibe tus mejoras.
+
+**Idea.** Un marketplace es un repo git con un archivo
+`.claude-plugin/marketplace.json`. El archivo lista tus plugins y dónde está cada
+uno. Cada persona lo agrega una vez. Después instala por nombre y recibe las
+versiones nuevas. El repo puede ser privado.
+
+**Receta.**
+
+1. Armá el repo así:
+
+```text
+team-plugins/
+├── .claude-plugin/marketplace.json
+└── plugins/
+    └── team-tools/
+        ├── .claude-plugin/plugin.json
+        └── skills/mi-skill/SKILL.md
+```
+
+2. `.claude-plugin/marketplace.json`:
+
+```json
+{
+  "name": "team-plugins",
+  "owner": { "name": "Tu equipo" },
+  "plugins": [
+    { "name": "team-tools", "source": "./plugins/team-tools", "version": "0.1.0" }
+  ]
+}
+```
+
+3. `plugins/team-tools/.claude-plugin/plugin.json`:
+
+```json
+{ "name": "team-tools", "version": "0.1.0", "description": "Skills del equipo" }
+```
+
+4. Hacé push. Cada persona corre, en Claude Code:
+
+```text
+/plugin marketplace add tu-org/team-plugins
+/plugin install team-tools@team-plugins
+```
+
+5. Opcional: para que el equipo lo tenga sin instalar a mano, commiteá esto en
+   `.claude/settings.json` del repo del proyecto:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "team-plugins": { "source": { "source": "github", "repo": "tu-org/team-plugins" } }
+  },
+  "enabledPlugins": { "team-tools@team-plugins": true }
+}
+```
+
+**Actualizar.** Cambiá la skill. Subí `version` en `plugin.json` y en
+`marketplace.json`. Hacé push. Con auto-update prendido, el equipo recibe el
+cambio solo (`/plugin` → Marketplaces → Enable auto-update). Sin auto-update:
+`/plugin` → Marketplaces → Update marketplace.
+
+**Verificar.**
+
+```text
+claude plugin list        # aparece team-tools@team-plugins
+```
+
+En una sesión, la skill aparece cuando escribís `/`.
+
+**Gotchas.**
+
+- Nadie puede tener dos marketplaces con el mismo nombre. Elegí uno que otros no
+  usen.
+- Si no subís `version`, los demás no reciben el cambio.
+- Lo de `.claude/settings.json` se aplica recién cuando cada persona confía en la
+  carpeta del proyecto.
+- Un plugin agrupa skills que se instalan juntas. No hace falta un plugin por skill.
+
+**Ejemplo real.** Este mismo repo: https://github.com/marianlaz/foundations
+
+**Fuentes.**
+
+- Crear un marketplace: https://code.claude.com/docs/en/plugin-marketplaces
+- Instalar y actualizar plugins: https://code.claude.com/docs/en/discover-plugins
+- `extraKnownMarketplaces` y `enabledPlugins`: https://code.claude.com/docs/en/settings
+
+---
+
 <!-- Próximos tips: mismo formato (Problema · Idea · Receta · Verificar · Gotchas). -->
 
 ## Demo
