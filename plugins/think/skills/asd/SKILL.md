@@ -122,6 +122,8 @@ Si el usuario después pide "más corto" o "más largo", movete un nivel.
 
 ## Uso desde otro skill o agente
 
+`/simple` la usa cuando el dial produce algo técnico o reusable: dial 0–2 → muy corto, 3–4 → medio, 5–7 → largo.
+
 Otras skills (por ejemplo, las que escriben documentos o páginas de una KB) usan esta skill como **estilo de
 escritura** de lo que producen. El llamador dice qué nivel aplica a qué parte.
 En ese modo:
