@@ -122,7 +122,7 @@ Si el usuario después pide "más corto" o "más largo", movete un nivel.
 
 ## Uso desde otro skill o agente
 
-Otros plugins (`prd-expert`, `kb-expert`) usan esta skill como **estilo de
+Otras skills (por ejemplo, las que escriben documentos o páginas de una KB) usan esta skill como **estilo de
 escritura** de lo que producen. El llamador dice qué nivel aplica a qué parte.
 En ese modo:
 
