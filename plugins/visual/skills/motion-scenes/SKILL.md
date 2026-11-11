@@ -108,4 +108,4 @@ Personal, **no subir al marketplace** hasta que Mariano diga. Cuando se comparta
 
 ## Demo
 
-Una historia ilustrada con escenas dibujadas en canvas: https://mariano-builders.vercel.app/demos/motion-scenes/
+Una historia ilustrada con escenas dibujadas en canvas: https://marianlaz.github.io/foundations/demos/motion-scenes/

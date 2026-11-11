@@ -12,7 +12,7 @@
       "name": "think",
       "source": "./plugins/think",
       "description": "Cómo pensar y escribir con agentes: el dial de profundidad, el recorte a lo esencial y tips para trabajar con ellos.",
-      "version": "0.2.2"
+      "version": "0.2.3"
     },
     {
       "name": "episodes",
@@ -24,13 +24,13 @@
       "name": "visual",
       "source": "./plugins/visual",
       "description": "Lenguaje visual en código: animaciones explicativas, portadas con orbe y polvo de partículas y webs de una página con orbe.",
-      "version": "0.1.2"
+      "version": "0.1.3"
     },
     {
       "name": "orbs",
       "source": "./plugins/orbs",
       "description": "Orbes del Akasha: forjar capacidades agénticas nuevas y las skills del orbe guardián de la memoria.",
-      "version": "0.1.2"
+      "version": "0.1.3"
     }
   ]
 }

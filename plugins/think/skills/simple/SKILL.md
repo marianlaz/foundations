@@ -94,4 +94,4 @@ lo que consideraste y descartaste.
 
 ## Demo
 
-Demo: pendiente.
+Los tres niveles del dial sobre una misma pregunta (ejemplos escritos a mano siguiendo la skill): https://marianlaz.github.io/foundations/demos/simple/

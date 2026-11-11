@@ -84,4 +84,4 @@ el contenido reemplazado por un ejemplo neutro; el motor es el mismo.
 
 ## Demo
 
-La plantilla funcionando: 5 capítulos sobre un orbe 3D: https://mariano-builders.vercel.app/demos/orb-web/
+La plantilla funcionando: 5 capítulos sobre un orbe 3D: https://marianlaz.github.io/foundations/demos/orb-web/

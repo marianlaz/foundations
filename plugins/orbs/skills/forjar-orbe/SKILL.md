@@ -76,4 +76,4 @@ un plugin local. Esta skill hace lo mismo que la forja de la app (⌘N), pero de
 
 ## Demo
 
-El motor dibujando las cuatro formas de orbe: https://mariano-builders.vercel.app/demos/forjar-orbe/
+El motor dibujando las cuatro formas de orbe: https://marianlaz.github.io/foundations/demos/forjar-orbe/

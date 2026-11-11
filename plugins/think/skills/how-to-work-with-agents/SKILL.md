@@ -209,4 +209,4 @@ En una sesión, la skill aparece cuando escribís `/`.
 
 ## Demo
 
-La newsletter con los tips publicados: https://mariano-builders.vercel.app/#builders-1
+Demo: pendiente.
