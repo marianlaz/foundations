@@ -91,3 +91,7 @@ lo que consideraste y descartaste.
   para divagar. En 11 tampoco hay relleno: hay más contenido real.
 - **Contradiciéndose.** Una skill que predica simpleza y ocupa 400 líneas ya falló.
   Esta se mantiene corta a propósito.
+
+## Demo
+
+Una misma pregunta a nivel 0, 3 y 9: https://mariano-builders.vercel.app/demos/simple/

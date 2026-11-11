@@ -1,7 +1,7 @@
 {
   "name": "think",
-  "version": "0.1.1",
-  "description": "Cómo pensar y escribir con agentes: el dial de profundidad y el recorte a lo esencial.",
+  "version": "0.2.0",
+  "description": "Cómo pensar y escribir con agentes: el dial de profundidad, el recorte a lo esencial y tips para trabajar con ellos.",
   "author": {
     "name": "Mariano"
   }

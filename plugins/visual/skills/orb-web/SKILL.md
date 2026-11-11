@@ -81,3 +81,7 @@ Las escenas en canvas salen de la skill hermana `motion-scenes` (`../motion-scen
 
 Sale de la web de Core (una página de propuesta con su orbe, oct 2026). La plantilla es esa misma página con
 el contenido reemplazado por un ejemplo neutro; el motor es el mismo.
+
+## Demo
+
+La plantilla funcionando: 5 capítulos sobre un orbe 3D: https://mariano-builders.vercel.app/demos/orb-web/

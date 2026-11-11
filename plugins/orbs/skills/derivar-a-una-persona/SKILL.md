@@ -19,3 +19,5 @@ Vos no mandás mensajes: sugerís a quién y dejás el texto listo. Lo manda la 
    (con los doc_id). Tres a cinco líneas, en su voz.
 4. **Nunca** uses un conector, Slack, mail ni ninguna herramienta para mandarlo, aunque esté disponible. Si te lo piden,
    explicá que esta skill solo prepara el mensaje.
+
+Demo: pendiente.

@@ -73,3 +73,7 @@ un plugin local. Esta skill hace lo mismo que la forja de la app (⌘N), pero de
   la misión no entra en 6 oraciones, son dos orbes.
 - **Preguntar todo.** El diseño lo proponés vos; Mariano corrige. Una pregunta por mensaje.
 - **Esencia en tercera persona.** El prompt le habla al orbe: "Tu misión es…", no "Este orbe hace…".
+
+## Demo
+
+El motor dibujando las cuatro formas de orbe: https://mariano-builders.vercel.app/demos/forjar-orbe/

@@ -105,3 +105,7 @@ puede pausar, recorrer, congelar para una captura o exportar a video sin cambiar
 
 Personal, **no subir al marketplace** hasta que Mariano diga. Cuando se comparta, empaquetarlo como plugin
 (`motion-scenes`) con esta skill adentro. Nació con la web de un producto (2026-09-29).
+
+## Demo
+
+Una historia ilustrada con escenas dibujadas en canvas: https://mariano-builders.vercel.app/demos/motion-scenes/

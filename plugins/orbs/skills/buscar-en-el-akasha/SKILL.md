@@ -24,3 +24,5 @@ La memoria se consulta solo en segundo plano. Nunca la leas desde tu sesión: tu
    - si vino de la copia local (sin red), decilo también.
 4. **Si no encontró nada**, decilo claro y proponé reformular, o `derivar-a-una-persona`.
 5. Si la persona te pide frenar una búsqueda: `akasha buscar list` y `akasha buscar cancel <id>`.
+
+Demo: pendiente.

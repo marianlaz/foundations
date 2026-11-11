@@ -26,3 +26,5 @@ writes a short README and `.sunday.json` (ecosystem version it came from).
 1. Tell the user the path and the command to try it: `claude --plugin-dir <path>`.
 2. The new character is all TODO. Don't invent its personality: define it with the user, starting with
    `character/persona.md` (who it is, how it speaks), then `character.json` (voice, palette, orb, fonts, gallery copy).
+
+Demo: pendiente.

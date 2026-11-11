@@ -134,3 +134,7 @@ En ese modo:
   placeholder, un tag de confianza, un criterio de aceptación), ese dato queda.
 - **Un solo pase.** Escribí el texto ya en STE; no lo escribas largo para
   después recortarlo.
+
+## Demo
+
+Un párrafo antes y después, en tres largos: https://mariano-builders.vercel.app/demos/asd/

@@ -127,3 +127,5 @@ la calma es lo que la distingue del thumb normal.
 - No commitear ni publicar desde la skill: dejá los archivos y avisá. La galería (`gallery.html`) hoy usa
   `poster.jpg` y superpone su propia píldora "Unverified" arriba a la izquierda; si pasa a usar `thumb.jpg`,
   sacá una de las dos (`chip:false` en el spec, o la de la galería).
+
+Demo: pendiente.

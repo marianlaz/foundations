@@ -58,3 +58,5 @@ Keys: Esc, ←/→, F. Pick each `poster.jpg` from the episode's strongest beat,
 `badge` + `badge_note` (an optional status pill on every poster, e.g. "Unverified"; empty hides it), `ideas_title`,
 `ideas_placeholder`, `tandas` (`[{name, reply}]`: the series a viewer can suggest for, and what the character answers),
 `thanks`, `like_whispers`, `read_only` (`{owner}`), `locale`, `series` (`{folder: "Display name"}`), `foot` (a line in the footer), `room` (the default light: night · dusk · day), `rooms` (optional `{night, dusk, day}`: each overrides that light's colors — `night, seat, edge, ink, soft, dim, coral, amber, veil, theater, btn, btn-ink, glow`; default: warm cinema). The page's own UI (buttons, rooms) is in Spanish.
+
+Demo: pendiente.

@@ -94,3 +94,7 @@ k.draw(ctx, x, y, r, t, {state, from, mix, tint, pulse, wake, dark, dens});
   `dark: false` on light backgrounds. Big reads better: r ≥ 120 at 1080 px wide.
 - The orb is the character on screen: in frame the whole episode, introduced by name in the first seconds.
 - To change the orb's code, edit `scripts/orb-src/` and rebuild `scripts/orb.js` with the command at the top of `orb-src/orb.js`.
+
+## Demo
+
+Un episodio real: «Máscaras», 43 s: https://mariano-builders.vercel.app/demos/episode/
