@@ -205,6 +205,50 @@ En una sesión, la skill aparece cuando escribís `/`.
 
 ---
 
+## Tip 3 · Pasale un secreto al agente sin pegarlo en el chat
+
+**Problema.** El agente necesita un token (Notion, GitHub, una API). Si lo pegás en
+el chat, queda en la conversación, en el historial y viaja al modelo. Ya no es
+secreto.
+
+**Idea.** El token nunca entra al chat. Lo copiás al portapapeles y el agente corre
+un comando que lo lee del portapapeles y lo escribe directo en el archivo. El
+comando solo muestra el largo y el prefijo, para confirmar que es el correcto.
+
+**Receta (macOS).** Copiá el token. Después pedile al agente que corra esto:
+
+```bash
+T="$(pbpaste)"
+case "$T" in
+  ntn_*) printf 'NOTION_TOKEN=%s\n' "$T" > .env.local && chmod 600 .env.local \
+           && echo "guardado (${#T} caracteres, prefijo ${T%%_*}_)" ;;
+  *)     echo "el portapapeles no tiene un token de Notion" ;;
+esac
+unset T
+```
+
+Cambiá `ntn_*` por el prefijo de tu token (`ghp_*`, `sk-*`, etc.). En Linux usá
+`wl-paste` o `xclip -o`. En Windows, `Get-Clipboard`.
+
+**Verificar.**
+
+```bash
+ls -l .env.local                 # permisos -rw------- (600)
+git check-ignore .env.local      # tiene que imprimir .env.local
+```
+
+**Gotchas.**
+
+- Confirmá que el archivo está en `.gitignore` antes de crearlo.
+- El comando no contiene el token, así que tampoco queda en el historial del shell.
+- Después, limpiá el portapapeles: `pbcopy < /dev/null`.
+- El agente igual puede leer el archivo si se lo pide alguien. Esto saca el secreto
+  del chat, no lo vuelve invisible. Para más resguardo, corré el comando vos con
+  `!` adelante, o usá un gestor de secretos (por ejemplo `op read` de 1Password).
+- Nunca le pidas al agente que "muestre" o "verifique" el token imprimiéndolo.
+
+---
+
 <!-- Próximos tips: mismo formato (Problema · Idea · Receta · Verificar · Gotchas). -->
 
 ## Demo

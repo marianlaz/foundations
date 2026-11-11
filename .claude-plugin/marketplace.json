@@ -12,7 +12,7 @@
       "name": "think",
       "source": "./plugins/think",
       "description": "Cómo pensar y escribir con agentes: el dial de profundidad, el recorte a lo esencial y tips para trabajar con ellos.",
-      "version": "0.2.4"
+      "version": "0.2.5"
     },
     {
       "name": "episodes",
