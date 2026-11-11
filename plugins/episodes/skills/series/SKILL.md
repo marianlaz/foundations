@@ -62,6 +62,4 @@ re-timed `voice.json` (silence before `titleAt`). `trailer.py` (clips + cards) i
 `gallery-data.mjs`, upload each `episode.mp4` + `poster.jpg`, write the rows in one batch (`order`: trailer first). Tell the
 owner what is a quote and what was cut, and what you could not check (you can't hear the mix: say so).
 
-## Demo
-
-El tráiler de una mini serie real: «Antes de dormir»: https://mariano-builders.vercel.app/demos/series/
+Demo: pendiente.

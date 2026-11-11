@@ -32,8 +32,8 @@ Para actualizar: `/plugin marketplace update foundations`.
 - **`how-to-work-with-agents`**: catálogo vivo de tips probados para trabajar con Claude Code: separar cuentas trabajo/personal por carpeta, hábitos que rinden. `/wwa`. [Demo](https://mariano-builders.vercel.app/#builders-1).
 
 ### episodes
-- **`episode`**: un episodio animado en la voz del personaje: guion → voz (ElevenLabs) → escenas dibujadas en canvas → `episode.mp4` + poster. [Demo](https://mariano-builders.vercel.app/demos/episode/).
-- **`series`**: una mini serie desde tus notas, con arco entre episodios, sonido y tráiler, publicada en la galería. [Demo](https://mariano-builders.vercel.app/demos/series/).
+- **`episode`**: un episodio animado en la voz del personaje: guion → voz (ElevenLabs) → escenas dibujadas en canvas → `episode.mp4` + poster. Demo: pendiente.
+- **`series`**: una mini serie desde tus notas, con arco entre episodios, sonido y tráiler, publicada en la galería. Demo: pendiente.
 - **`gallery`**: publica los episodios como sala de proyección privada en claude.ai (posters, player, likes, feedback e ideas). Demo: pendiente.
 - **`instance`**: crea un personaje nuevo (nombre, persona, voz, paleta) con las mismas skills de episodios. Demo: pendiente.
 
