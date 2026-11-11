@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Galería de orbes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Las cuatro formas lado a lado, cada una en su lienzo, para comparar. Arriba se elige el tono. */
+:root {
+  color-scheme: dark;
+  --void: #000000;
+  --ink: #c9f6fb;
+  --dim: #4f7a80;
+  --linea: #10282b;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--void); color: var(--ink); display: flex; flex-direction: column; }
+header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 14px 16px 10px;
+}
+h1 { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 26px; }
+.tonos { display: flex; gap: 6px; flex-wrap: wrap; }
+.tonos button {
+  font-family: var(--font-data); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--dim); background: transparent; border: 1px solid var(--linea); border-radius: 999px;
+  padding: 6px 12px; cursor: pointer;
+}
+.tonos button[aria-pressed="true"] { color: var(--ink); border-color: var(--dim); }
+main {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  gap: 1px; background: var(--linea);
+}
+figure { position: relative; margin: 0; background: var(--void); min-height: 260px; }
+figure canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+figcaption {
+  position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; pointer-events: none;
+}
+figcaption b { display: block; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 22px; }
+figcaption span { font-family: var(--font-data); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.aviso { padding: 24px 16px; font-family: var(--font-data); font-size: 13px; text-align: center; }
+@media (max-width: 640px) {
+  main { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-rows: 70vw; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Las cuatro formas</h1>
+  <div class="tonos" id="tonos" role="group" aria-label="Tono">
+    <button data-tono="187" aria-pressed="true">cian · 187</button>
+    <button data-tono="265" aria-pressed="false">violeta · 265</button>
+    <button data-tono="42" aria-pressed="false">dorado · 42</button>
+    <button data-tono="mezcla" aria-pressed="false">mezcla</button>
+  </div>
+</header>
+<p class="aviso" id="aviso" hidden>Este navegador no tiene WebGL activo, así que los orbes no se pueden dibujar.</p>
+<main id="grilla"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="./orbe.js"></script>
+<script>
+(function () {
+  var FORMAS = [
+    { form: 'orb', rol: 'generalista', mezcla: 187 },
+    { form: 'ring', rol: 'vigía · monitor', mezcla: 150 },
+    { form: 'crystal', rol: 'analista · investigador', mezcla: 265 },
+    { form: 'star', rol: 'ejecutor · hacedor', mezcla: 28 }
+  ];
+  var q = new URLSearchParams(location.search);
+  var semilla = q.get('seed') || 'akasha';
+  var grilla = document.getElementById('grilla'), orbes = [];
+
+  try {
+    FORMAS.forEach(function (f) {
+      var fig = document.createElement('figure');
+      fig.innerHTML = '<canvas aria-label="Orbe de forma ' + f.form + '"></canvas><figcaption><b>' + f.form + '</b><span>' + f.rol + '</span></figcaption>';
+      grilla.appendChild(fig);
+      // cuatro lienzos a la vez: bajo la densidad para que no pese
+      orbes.push(Orbe.create(fig.querySelector('canvas'), { form: f.form, hue: 187, seed: semilla, density: 0.6, interactive: false, still: q.get('still') === '1' }));
+    });
+  } catch (e) {
+    orbes.forEach(function (o) { o.destroy(); });
+    grilla.hidden = true;
+    document.getElementById('aviso').hidden = false;
+    return;
+  }
+
+  function tono(valor) {
+    orbes.forEach(function (o, i) { o.set({ hue: valor === 'mezcla' ? FORMAS[i].mezcla : +valor }); });
+    [].forEach.call(document.querySelectorAll('#tonos button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tono === valor)); });
+  }
+  document.getElementById('tonos').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (b) tono(b.dataset.tono);
+  });
+  if (q.get('hue')) tono(q.get('hue'));
+})();
+</script>
+<!--cpa--><style>/* Design tokens · paleta "Taller" (grafito tibio + ámbar de lámpara de sodio).
+   Color en OKLCH con light-dark(); contraste AA verificado (peor par: 5.89:1). */
+@property --glow{syntax:"<number>";inherits:false;initial-value:0}
+@property --hx{syntax:"<percentage>";inherits:false;initial-value:30%}
+.copyagent{
+  color-scheme:light dark;
+  /* color */
+  --bg:light-dark(oklch(95% .01 85),oklch(18% .012 60));
+  --surface:light-dark(oklch(98.5% .005 85),oklch(23% .015 60));
+  --fg:light-dark(oklch(22% .02 60),oklch(95% .01 80));
+  --muted:light-dark(oklch(46% .035 65),oklch(74% .03 70));
+  --line:light-dark(oklch(85% .018 80),oklch(33% .02 60));
+  --accent:light-dark(oklch(48% .12 55),oklch(82% .17 80));
+  --on-accent:light-dark(oklch(98.5% .01 85),oklch(18% .03 60));
+  --accent-2:light-dark(oklch(44% .075 205),oklch(78% .1 195));
+  --on-accent-2:light-dark(oklch(98.5% .01 85),oklch(18% .03 60));
+  --danger:light-dark(oklch(48% .17 25),oklch(75% .15 25));
+  --on-danger:light-dark(oklch(98.5% .01 85),oklch(18% .03 60));
+  /* terminal y bloques de código: oscuros en los dos temas */
+  --term-bg:oklch(15% .012 60);
+  --term-fg:oklch(93% .015 80);
+  --term-muted:oklch(70% .03 70);
+  --term-accent:oklch(82% .17 80);
+  --term-accent-2:oklch(78% .1 195);
+  /* tipografía */
+  --font-display:"Bricolage Grotesque","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --font-body:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+  --step--1:clamp(.8rem,.78rem + .1vw,.875rem);
+  --step-0:clamp(1rem,.96rem + .2vw,1.1rem);
+  --step-1:clamp(1.25rem,1.1rem + .6vw,1.6rem);
+  --step-2:clamp(1.6rem,1.3rem + 1.4vw,2.4rem);
+  --step-3:clamp(2.2rem,1.5rem + 3vw,3.6rem);
+  --step-5:clamp(2.6rem,1.2rem + 6.2vw,5.6rem);
+  /* espaciado */
+  --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.5rem;--space-6:2rem;--space-7:3rem;--space-8:5rem;
+  /* radios */
+  --radius-s:.3rem;--radius-m:.6rem;--radius-l:1rem;--radius-full:999px;
+  /* sombras */
+  --shadow-1:0 .5rem 1.25rem -.6rem oklch(20% .05 60 / .45);
+  --shadow-2:0 1.5rem 3rem -1.5rem oklch(20% .05 60 / .5);
+  --shadow-glow:0 2rem 4rem -2rem oklch(82% .17 80 / .5);
+  /* motion */
+  --dur-1:.15s;--dur-2:.25s;--dur-3:.5s;
+  --ease-out:cubic-bezier(.2,.8,.2,1);
+  --ease-inout:cubic-bezier(.65,0,.35,1);
+}
+.copyagent[data-theme="light"]{color-scheme:light}
+.copyagent[data-theme="dark"]{color-scheme:dark}
+@media (prefers-reduced-motion:reduce){.copyagent{--dur-1:0s;--dur-2:0s;--dur-3:0s}}
+/* "Copiar para tu agente": botón copiar (normal / hover / copiado / error) + panel "Ver qué se copia". */
+.copyagent{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-4);font-family:var(--font-mono)}
+.btn-copy{display:inline-flex;align-items:center;gap:.55rem;font:500 .875rem var(--font-mono);cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:var(--radius-m);padding:.7rem 1rem;transition:transform var(--dur-1) var(--ease-out),box-shadow var(--dur-1),background var(--dur-1)}
+.btn-copy:hover{transform:translateY(-2px);box-shadow:var(--shadow-1)}
+.btn-copy:focus-visible,.copyagent summary:focus-visible,.peek-tabs button:focus-visible,.peek-close:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.btn-copy svg{width:1.1em;height:1.1em;flex:none}
+.btn-copy .i-ok,.btn-copy .i-err{display:none}
+.btn-copy[data-state="done"]{background:var(--accent-2);border-color:var(--accent-2);color:var(--on-accent-2)}
+.btn-copy[data-state="error"]{background:var(--danger);border-color:var(--danger);color:var(--on-danger)}
+.btn-copy[data-state="done"] .i-copy,.btn-copy[data-state="error"] .i-copy{display:none}
+.btn-copy[data-state="done"] .i-ok,.btn-copy[data-state="error"] .i-err{display:block}
+.btn-copy--sm{padding:.4rem .7rem;font-size:.75rem;gap:.4rem}
+.code .btn-copy{background:oklch(100% 0 0 / .1);border-color:transparent;color:var(--term-fg)}
+.code .btn-copy:hover{background:oklch(100% 0 0 / .2)}
+.code .btn-copy[data-state="done"]{background:var(--accent-2);color:var(--on-accent-2)}
+.code .btn-copy[data-state="error"]{background:var(--danger);color:var(--on-danger)}
+.copyagent .live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.copyagent details.peek{display:contents}
+.copyagent:not(.is-float) details.peek::details-content{flex:1 1 100%;min-width:0}
+.copyagent summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;font:500 .85rem var(--font-mono);color:var(--muted);padding:.7rem .3rem;border-radius:var(--radius-s)}
+.copyagent summary::-webkit-details-marker{display:none}
+.copyagent summary::before{content:"";width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform var(--dur-2) var(--ease-out)}
+.copyagent summary:hover{color:var(--fg)}
+.copyagent details[open] summary::before{transform:rotate(45deg)}
+.peek-panel{flex:1 1 100%;min-width:0;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius-l);box-shadow:var(--shadow-2);overflow:hidden;font-family:var(--font-body)}
+.peek-bar{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.peek-tabs{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-m);overflow:hidden;margin-right:auto}
+.peek-tabs button{font:500 .75rem var(--font-mono);background:none;border:0;color:var(--muted);padding:.4rem .75rem;cursor:pointer}
+.peek-tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.peek-close{display:none;font:500 1.2rem/1 var(--font-mono);background:none;border:0;color:var(--muted);cursor:pointer;padding:.2rem .5rem}
+.peek-md,.peek-render{margin:0;max-height:22rem;overflow:auto;padding:var(--space-4);overscroll-behavior:contain}
+.peek-md{counter-reset:ln;font:400 .8rem/1.6 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--term-bg);color:var(--term-fg)}
+.peek-md .ln{display:block;padding-left:3.2ch;position:relative;min-height:1.6em}
+.peek-md .ln::before{counter-increment:ln;content:counter(ln);position:absolute;left:0;width:2.2ch;text-align:right;color:var(--term-muted);opacity:.55}
+.peek-render{font-size:.95rem;line-height:1.6}
+.peek-render h3{font:800 1.3rem var(--font-display);margin:0 0 var(--space-3)}
+.peek-render p{margin:0 0 var(--space-3)}.peek-render ul{margin:0 0 var(--space-3);padding-left:1.2em}.peek-render li{margin-bottom:.4rem}
+.peek-render hr{border:0;border-top:1px solid var(--line);margin:var(--space-4) 0}
+.peek-render code{font:500 .88em var(--font-mono);background:color-mix(in oklch,var(--accent) 14%,transparent);padding:.1em .35em;border-radius:var(--radius-s)}
+.peek-render pre{margin:0 0 var(--space-3);background:var(--term-bg);color:var(--term-fg);border-radius:var(--radius-m);padding:var(--space-3);overflow-x:auto}
+.peek-render pre code{background:none;padding:0;color:inherit;font:400 .8rem/1.6 var(--font-mono)}
+.peek-md:focus-visible,.peek-render:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media (prefers-reduced-motion:no-preference){.copyagent details[open] .peek-panel{animation:peek-in var(--dur-2) var(--ease-out)}
+  @keyframes peek-in{from{opacity:0;transform:translateY(-6px)}}}
+/* flotante (demos): popover anclado arriba del botón; panel inferior en pantallas angostas */
+.copyagent.is-float{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:2147483000;flex-wrap:nowrap;justify-content:flex-end;gap:var(--space-2);background:var(--bg);color:var(--fg);padding:var(--space-2);border-radius:var(--radius-l);border:1px solid var(--line);box-shadow:var(--shadow-1)}
+.is-float summary{padding:.7rem .5rem}
+.is-float .peek-panel{position:absolute;right:0;bottom:calc(100% + .5rem);width:min(36rem,calc(100vw - 32px));flex:none}
+.is-float .peek-md,.is-float .peek-render{max-height:min(22rem,50vh)}
+@media (max-width:600px){
+  .is-float .peek-panel{position:fixed;left:0;right:0;bottom:0;width:auto;border-radius:var(--radius-l) var(--radius-l) 0 0;padding-bottom:env(safe-area-inset-bottom,0px);z-index:1}
+  .is-float .peek-close{display:block}
+  .is-float .peek-md,.is-float .peek-render{max-height:55vh}
+  .is-float summary span{display:none}
+  .is-float summary::after{content:"Ver";}
+}
+</style><div class="copyagent is-float"><button class="btn-copy" type="button"><svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><svg class="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><svg class="i-err" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span class="lbl">Copiar para tu agente</span></button><details class="peek"><summary><span>Ver qué se copia</span></summary><div class="peek-panel"><div class="peek-bar"><div class="peek-tabs" role="group" aria-label="Vista del prompt"><button type="button" data-mode="md" aria-pressed="true">Markdown</button><button type="button" data-mode="render" aria-pressed="false">Vista</button></div><button class="btn-copy btn-copy--sm" type="button"><svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><svg class="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg><svg class="i-err" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span class="lbl">Copiar</span></button><button class="peek-close" type="button" aria-label="Cerrar">&times;</button></div><pre class="peek-md" tabindex="0" aria-label="Prompt en markdown"></pre><div class="peek-render" tabindex="0" hidden aria-label="Prompt renderizado"></div></div></details><textarea class="prompt-src" hidden readonly>Instalame la skill `forjar-orbe` del marketplace público de Claude Code marianlaz/foundations (plugin `orbs`). Son comandos de Claude Code que se escriben en el prompt; si no podés ejecutarlos vos, decime que los escriba yo, uno por uno:
+
+/plugin marketplace add marianlaz/foundations
+/plugin install orbs@foundations
+
+Si la skill no aparece después de instalar, reiniciá Claude Code. Para probarla:
+
+Forjá un orbe que cada mañana me resuma los PRs que tengo pendientes de review
+
+Más info: https://github.com/marianlaz/foundations</textarea><span class="live" role="status" aria-live="polite"></span></div><script>/* Componente "copiar": botones .btn-copy, panel .peek con vista Markdown / Vista. Sin dependencias. */
+(function(){
+if(window.__copyUI)return;window.__copyUI=1;
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function inl(s){s=esc(s);var cs=[];s=s.replace(/`([^`]+)`/g,function(_,c){cs.push(c);return '\u0000'+(cs.length-1)+'\u0000'});
+  s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');return s.replace(/\u0000(\d+)\u0000/g,function(_,i){return '<code>'+cs[i]+'</code>'})}
+function md2html(t){var L=t.split('\n'),o=[],i=0;
+  while(i<L.length){var l=L[i];
+    if(/^```/.test(l)){i++;var c=[];while(i<L.length&&!/^```/.test(L[i]))c.push(L[i++]);i++;o.push('<pre><code>'+esc(c.join('\n'))+'</code></pre>')}
+    else if(/^# /.test(l)){o.push('<h3>'+inl(l.slice(2))+'</h3>');i++}
+    else if(/^---\s*$/.test(l)){o.push('<hr>');i++}
+    else if(/^- /.test(l)){var li=[];while(i<L.length&&(/^- /.test(L[i])||/^ +\S/.test(L[i]))){if(/^- /.test(L[i]))li.push(L[i].slice(2));else li[li.length-1]+=' '+L[i].trim();i++}
+      o.push('<ul>'+li.map(function(x){return '<li>'+inl(x)+'</li>'}).join('')+'</ul>')}
+    else if(l.trim()){var p=[];while(i<L.length&&L[i].trim()&&!/^(```|# |---|- )/.test(L[i]))p.push(L[i++].trim());o.push('<p>'+inl(p.join(' '))+'</p>')}
+    else i++}
+  return o.join('')}
+function fallback(t){var x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();var r=false;try{r=document.execCommand('copy')}catch(_){}x.remove();return r}
+function write(t,cb){function ok(){cb(true)}function fb(){cb(fallback(t))}try{navigator.clipboard.writeText(t).then(ok,fb)}catch(_){fb()}}
+function setState(b,st,live){var l=b.querySelector('.lbl');if(!l.dataset.idle)l.dataset.idle=l.textContent;
+  b.dataset.state=st;l.textContent=st==='done'?'Copiado':st==='error'?'No se pudo copiar':l.dataset.idle;
+  if(live)live.textContent=st==='done'?'Copiado al portapapeles':st==='error'?'No se pudo copiar':'';
+  clearTimeout(b._t);b._t=setTimeout(function(){delete b.dataset.state;l.textContent=l.dataset.idle;if(live)live.textContent=''},2000)}
+function panes(c){if(c._built)return;c._built=1;var t=c.querySelector('.prompt-src').value,md=c.querySelector('.peek-md'),rd=c.querySelector('.peek-render');
+  t.split('\n').forEach(function(line){var s=document.createElement('span');s.className='ln';s.textContent=line||' ';md.appendChild(s)});rd.innerHTML=md2html(t)}
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('.btn-copy');
+  if(b){var c=b.closest('.copyagent'),src=c&&c.querySelector('.prompt-src'),cd=b.closest('.code'),txt=src?src.value:cd?cd.querySelector('code').innerText:null,live=c&&c.querySelector('.live');
+    if(txt===null)return;if(!src)c=null;
+    var all=c?[].slice.call(c.querySelectorAll('.btn-copy')):[b];
+    write(txt,function(ok){all.forEach(function(x){setState(x,ok?'done':'error',x===b?live:null)})});return}
+  var tb=e.target.closest&&e.target.closest('.peek-tabs button');
+  if(tb){var c2=tb.closest('.copyagent');panes(c2);[].forEach.call(tb.parentNode.children,function(x){x.setAttribute('aria-pressed',x===tb?'true':'false')});
+    var md=tb.dataset.mode==='md';c2.querySelector('.peek-md').hidden=!md;c2.querySelector('.peek-render').hidden=md;return}
+  var cl=e.target.closest&&e.target.closest('.peek-close');
+  if(cl){var d=cl.closest('details');d.open=false;d.querySelector('summary').focus()}
+});
+document.addEventListener('toggle',function(e){var d=e.target;if(d.matches&&d.matches('.copyagent details')&&d.open)panes(d.closest('.copyagent'))},true);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){var d=e.target.closest&&e.target.closest('.copyagent details[open]');if(d){d.open=false;d.querySelector('summary').focus()}}});
+})();
+</script><!--/cpa--></body>
+</html>
